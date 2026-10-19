@@ -1,0 +1,18 @@
+# Local editor and operating-system files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Local development artifacts
+node_modules/
+dist/
+.env
+.env.*
+!.env.example
+*.log
+
+# Generated screenshots and transient outputs
+tests/
+.tmp/
+.cache/
