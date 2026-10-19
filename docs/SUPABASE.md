@@ -1,56 +1,39 @@
-# Cimbria Bierpong Cup – Supabase Backend
+# Supabase Backend – Cimbria Bierpong Cup
 
-Stand: 20. Oktober 2026
+**Projekt:** https://supabase.com/dashboard/project/cxjhlaavfsavokqflxti (Frankfurt, `eu-central-1`).
 
 ## Status
-- Projekt: **Cimbria Bierpong Cup** (Supabase, Region `eu-central-1` / Frankfurt).
-- Status: Datenbankschema vorhanden, Migrationen angewendet, RLS aktiv, Realtime-Publikation eingerichtet.
-- Website: **noch lokale Demo** in `js/app.js` mit `localStorage`. Noch keine produktive Datenbankanbindung.
-- Das Turnier startet mit `is_published = false` und `registration_open = false`.
-- Die Datenbank enthält acht leere Gruppen (A–H) und keine echten Teams, Spieler oder Begegnungen.
+- SQL-Migrationen angewendet; RLS, Realtime, serverseitige Validierung und Admin-Allowlist eingerichtet.
+- Die E-Mail `henner@desma.africa` ist in `cimbria_private.admin_email_allowlist` freigegeben.
+- Ein Auth-Benutzer unter dieser E-Mail existiert **erst nach der ersten bestätigten Anmeldung per Magic Link**.
+- Der Registrierungs-Endpunkt `cimbria-register-team` ist aktiv. Die Anmeldung ist standardmäßig geschlossen.
+- Vier freie Spieltische und Gruppen A–H sind angelegt; keine echten Teilnehmer.
 
-## Tabellen
-| Tabelle / View | Zweck |
-| --- | --- |
-| `tournaments` | Turnierphasen, Anmeldung, Konfiguration und Veröffentlichung |
-| `teams` | 24–32 Teams, eindeutige Namen je Turnier |
-| `players` | Maximal vier Spieler je Team (Slot 1–4); personenbezogene Daten |
-| `groups` | Gruppencodes und Reihenfolge |
-| `group_members` | Eindeutige Gruppenzuordnung jedes Teams |
-| `matches` | Gruppenphase, Entscheidungsspiele, Playoffs, Sieger, Tisch und Status |
-| `game_tables` | Dynamische Tische und Aktivierung |
-| `admin_users` | Zuordnung bestehender Supabase-Auth-Accounts zu Admin-/Supervisor-Rollen |
-| `audit_events` | Nachvollziehbarkeit von Team-, Spiel-, Tisch- und Turnieränderungen |
-| `group_standings` (View) | Aus regulären Gruppenspielen berechnete Siege, Niederlagen und Spiele |
+## Admin-Einrichtung
+In [Supabase Authentication → URL Configuration](https://supabase.com/dashboard/project/cxjhlaavfsavokqflxti/auth/url-configuration):
+- **Site URL:** `https://hennerdesma-art.github.io/cimbria-bierpong-cup/`
+- **Redirect URLs:** `https://hennerdesma-art.github.io/cimbria-bierpong-cup/`
 
-## Zugriff und Datenschutz
-- Sämtliche Tabellen besitzen Row Level Security (RLS).
-- Unangemeldete Besucher haben nur **lesenden** Zugriff auf öffentliche Turnierdaten und nur wenn das jeweilige Turnier veröffentlicht ist.
-- `players`, `admin_users` und `audit_events` sind nicht öffentlich abrufbar.
-- Nur angemeldete und freigeschaltete Admin-Accounts dürfen Turnierdaten ändern; niemand besitzt durch eine öffentliche Registrierung automatisch Adminrechte.
-- `cimbria_private` enthält interne Sicherheits- und Triggerfunktionen außerhalb der öffentlichen API.
-- Für die spätere öffentliche **Teamanmeldung** eine eigene validierte serverseitige Edge Function mit Rate-Limiting/Anti-Spam-Schutz vorsehen. **Kein** offenes `anon INSERT` auf `teams` oder `players`.
-- Niemals den `service_role`-Schlüssel, private Schlüssel, Passwörter oder Token in dieses öffentliche Repository oder in Browser-JavaScript schreiben.
+Danach `#/admin` öffnen und Anmeldelink an die freigegebene E-Mail senden. Nach der Verifikation legt ein Trigger den `admin_users`-Datensatz an. E-Mail und Bestätigung werden bei jedem Admin-Zugriff geprüft; andere angemeldete Benutzer erhalten keine Adminrechte.
 
-## Bereits eingebaute Regeln
-- Ergebnis nur Sieg/Niederlage; Sieger muss eines der beiden tatsächlich spielenden Teams sein.
-- Ein Spiel im Status `ready` oder `live` benötigt einen aktiven Tisch und zwei Teams.
-- Je Tisch nur ein aktives Spiel; ein Team darf nicht in zwei gleichzeitigen Spielen antreten.
-- Belegte Tische können nicht deaktiviert werden.
-- Gruppentabellen berücksichtigen nur reguläre Gruppenspiele; Tiebreak-Spiele bleiben eigenständig.
-- Maximale Teamanzahl wird serverseitig erzwungen.
+## Datenmodell
+`tournaments` (Phase, Anmeldestatus, Version), `teams` (Teamnamen),
+`players` (private Spielernamen), `groups`, `group_members`,
+`matches`, `game_tables`, `admin_users`, `audit_events`,
+`group_standings` (View).
 
-## Migrationen
-Die exakt angewendeten SQL-Dateien liegen unter `supabase/migrations/`. Reihenfolge:
-1. `20261019232411_cimbria_initial_secure_tournament_schema.sql`
-2. `20261019232515_cimbria_harden_internal_functions.sql`
-3. `20261019232600_cimbria_strict_match_result_validation.sql`
+## Sicherheit und Schreibwege
+- Gäste dürfen veröffentlichten Turnierstand lesen; Spielernamen sind nur Admins zugänglich.
+- Registrierung erfolgt **ohne Konto** über die Edge Function; sie validiert 2–4 Spielernamen, Teamname, Limits, eindeutigen Namen und den geöffneten Registrierungsstatus; ein einziger Datenbankvorgang legt Team plus Spieler an.
+- Admin-Änderungen laufen als angemeldeter Benutzer über die RLS-geschützte Funktion `cimbria_admin_save_state` (SECURITY INVOKER), mit Revision gegen konkurrierende Änderungen.
+- Die `service_role`-Berechtigung wird ausschließlich innerhalb der Edge Function verwendet. Sie darf nicht ins Browser-JavaScript oder GitHub.
+- Anmeldungen sind absichtlich ohne CAPTCHA, explizite IP-Rate-Limits oder Gast-Bearbeitungslinks umgesetzt. Vor Eventstart erhöhte Missbrauchsgefahr berücksichtigen.
 
-Nicht erneut auf demselben Projekt ausführen – die Supabase-Migrationstabelle zeichnet diese Migrationen bereits auf.
+## Testablauf
+1. Auth Redirect URLs einstellen; Admin-Link bestätigen.
+2. Anmeldung im Admin-Bereich öffnen.
+3. Gastanmeldung eines Testteams vornehmen und Anzeige auf zweitem Gerät prüfen.
+4. Gruppen auslosen und Spielstatus, Ergebnis, Tiebreak und Playoff-Übergänge testen.
+5. Für ein echtes Turnier Testdaten vorher unter Admin-Kontrolle entfernen; keine produktiven Ergebnisse simulieren.
 
-## Nächste Schritte
-1. Supabase Auth für die Turnierleitung konfigurieren und ersten Admin **vertrauenswürdig** zuordnen. Dazu eine echte Auth-User-UUID verwenden, nicht eine im Code fest kodierte ID.
-2. Sicheren Registrierungs-Endpunkt (mit Prüfung von Teamgröße, Teamzahl und Einwilligung) entwickeln.
-3. Website auf Supabase API umstellen, `localStorage`-Demo vom Live-Betrieb trennen.
-4. Realtime-Updates testen; zuerst mit Testdaten, dann veröffentlichen.
-5. Erst nach gesichertem Admin-Login und bestandenen Tests `is_published` und `registration_open` aktivieren.
+**Hinweis:** Die Datenbank- und Quellcodeintegration ist eingerichtet; ein echter Login-Link muss noch durch den berechtigten Postfachinhaber bestätigt und der komplette UI-Test mit zwei Geräten durchgeführt werden.

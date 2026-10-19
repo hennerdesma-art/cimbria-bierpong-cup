@@ -1,9 +1,8 @@
-# Security status
-
-This repository currently contains a **local prototype**, not a production service.
-
-- Registration and results are stored only in each browser's localStorage.
-- Admin controls have no authentication and are not suitable for public deployment.
-- Do not enable public registration or present tournament results as synchronized until a backend, authentication and authorization have been deployed.
-- Do not commit credentials or private keys. Use environment variables and backend secrets for production.
-- Before public launch, add server-side validation, Supabase RLS, anti-spam protection, and basic data protection notices.
+# Sicherheit – Cimbria Cup
+- GitHub ist **öffentlich**. Keine Passwörter, Service-Role-Keys, SMTP-Credentials, GitHub-Tokens oder Supabase-Serversecrets veröffentlichen.
+- Der Supabase Publishable Key in `js/cloud.js` ist bewusst öffentlich; RLS setzt Zugriffsrechte durch.
+- Neun Tabellen verfügen über RLS; keine anonymen Schreibrechte auf Datenbanktabellen. Private Spielernamen können nur verifizierte Admins lesen.
+- Die öffentliche Edge Function erlaubt atomare Gast-Anmeldungen mit Datenprüfung und Kapazitätslimit.
+- Die Admin-Funktionen erfordern verifizierte Auth-Identität und Eintrag in der privaten E-Mail-Allowlist.
+- Die Auth Redirect URLs müssen konfiguriert sein.
+- Kein CAPTCHA/Rate-Limiting/Gast-Bearbeitungslink nach Entscheidung des Auftraggebers. Nicht ohne Aufsicht offen schalten.
