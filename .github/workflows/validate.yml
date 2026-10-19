@@ -1,0 +1,26 @@
+name: Validate Cimbria Website
+on:
+  push:
+    branches: [main, feat/supabase-auth-live]
+  pull_request:
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check JavaScript syntax
+        run: |
+          node --check js/cloud.js
+          node --check js/app.js
+      - name: Check essential assets
+        run: |
+          test -s index.html
+          test -s css/base.css
+          test -s css/v2.css
+          test -s css/cloud.css
+          test -s assets/background-bierpong.mp4
+          test -s assets/zirkel-cimbria.png
+          test -s supabase/functions/cimbria-register-team/index.ts
