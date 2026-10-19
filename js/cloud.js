@@ -219,15 +219,20 @@
       return data;
     } finally { busy=false; }
   }
-  async function sendAdminLink(email) {
-    const r = await client.auth.signInWithOtp({
-      email:email.trim(),
-      options:{
-        shouldCreateUser:true,
-        emailRedirectTo: window.location.origin + window.location.pathname,
-      },
+  async function signInAdmin(email,password) {
+    const result = await client.auth.signInWithPassword({
+      email: email.trim(),
+      password,
     });
-    if (r.error) throw r.error;
+    if (result.error) throw new Error("E-Mail oder Passwort ungültig.");
+    const allowed = await role();
+    if (!allowed) {
+      await client.auth.signOut();
+      await role();
+      throw new Error("Dieses Konto besitzt keine Freigabe für die Turnierleitung.");
+    }
+    await reload();
+    return true;
   }
   async function logout() {
     const r = await client.auth.signOut();
@@ -237,7 +242,7 @@
     return await reload();
   }
   window.CimbriaCloud = {
-    initialize, reload, save, guestRegister, sendAdminLink, logout,
+    initialize, reload, save, guestRegister, signInAdmin, logout,
     get isAdmin() { return authorized; },
     get email() { return authEmail; },
     get isBusy() { return busy; },

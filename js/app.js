@@ -696,13 +696,15 @@
       return `${pageBanner('TURNIERLEITUNG · GESCHÜTZT','Admin <em>Login</em>','Nur freigegebene Turnierleiter dürfen Spiele und Ergebnisse verwalten.')}
       <div class="container content-pad"><section class="v2-glass v2-panel" style="max-width:540px;margin:0 auto">
       <div class="v2-form-title"><span class="v2-form-icon">${icon('lock')}</span><div>
-      <h2>Sicher anmelden</h2><p>Wir senden dir einen einmaligen Anmeldelink an deine E-Mail-Adresse.</p></div></div>
+      <h2>Sicher anmelden</h2><p>Mit deiner Admin-E-Mail und deinem Passwort anmelden – ganz ohne Bestätigungs-E-Mail.</p></div></div>
       ${CLOUD.email?`<div class="notice">${icon('info')} Angemeldet als ${escape(CLOUD.email)}, aber für die Turnierleitung nicht freigeschaltet.</div>`:''}
       <form id="cimbria-admin-login"><div class="field"><label for="admin-email">Admin-E-Mail</label>
       <input type="email" id="admin-email" name="email" autocomplete="email" required
       value="${escape(ui.authEmail)}" placeholder="name@example.com"></div>
-      <button class="btn btn-gold v2-submit" type="submit" ${ui.saving?'disabled':''}>${icon('mail')} Anmeldelink senden</button></form>
-      ${ui.authSent?`<div class="notice" style="margin-top:16px">${icon('check')} Bitte Posteingang prüfen und den Link öffnen. Die Adresse muss in Supabase freigegeben sein.</div>`:''}
+      <div class="field"><label for="admin-password">Passwort</label>
+      <input type="password" id="admin-password" name="password" autocomplete="current-password"
+        minlength="8" required placeholder="Admin-Passwort"></div>
+      <button class="btn btn-gold v2-submit" type="submit" ${ui.saving?'disabled':''}>${icon('lock')} Als Admin anmelden</button></form>
       <p class="muted text-sm" style="margin-top:20px">Teilnehmer und Zuschauer benötigen keinen Account.</p>
       </section></div>`;
     }
@@ -842,9 +844,16 @@
       event.preventDefault();
       if(ui.saving)return;
       const email=event.target.elements.email.value.trim();
-      ui.authEmail=email;ui.authSent=false;ui.saving=true;render();
-      CLOUD.sendAdminLink(email).then(()=>{ui.authSent=true;ui.saving=false;render();})
-        .catch(e=>{ui.saving=false;notify('Anmeldelink konnte nicht versendet werden: '+e.message,true);});
+      const password=event.target.elements.password.value;
+      event.target.elements.password.value='';
+      ui.authEmail=email;ui.saving=true;render();
+      CLOUD.signInAdmin(email,password).then(()=>{
+        ui.saving=false;
+        notify('Erfolgreich als Turnierleitung angemeldet.');
+      }).catch(e=>{
+        ui.saving=false;
+        notify('Login fehlgeschlagen: '+(e.message||'E-Mail oder Passwort prüfen.'),true);
+      });
       return;
     }
     if(event.target.id!=='team-registration')return;

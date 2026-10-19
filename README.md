@@ -7,7 +7,7 @@ Interaktive Beer-Pong-Turnierwebsite im Cimbria-Design (Violett, Bordeaux und Go
 - Öffentliche Teamanmeldung ohne Account (2–4 Spieler); keine Gast-Bearbeitungslinks, kein CAPTCHA.
 - Gruppenphase (acht Gruppen), dynamische Tische, Live-Spielplan und 16er-Playoff-Baum.
 - Nur Siege/Niederlagen; Entscheidungsspiele bei nicht auflösbaren Gruppengleichständen.
-- Geschützter Admin-Zugang per Supabase-Magic-Link und serverseitiger E-Mail-Freigabe.
+- Geschützter Admin-Zugang mit E-Mail und Passwort sowie serverseitiger E-Mail-Freigabe.
 - Daten in Supabase PostgreSQL, automatische Live-Aktualisierungen.
 
 ## Dateien
@@ -18,12 +18,12 @@ Interaktive Beer-Pong-Turnierwebsite im Cimbria-Design (Violett, Bordeaux und Go
 - `supabase/functions/cimbria-register-team/index.ts`: öffentlicher Backend-Registrierungsendpunkt.
 - `docs/SUPABASE.md`: Konfiguration und wichtige Betriebshinweise.
 
-## Einmalige Einrichtung
-1. Öffne [Supabase Auth URL Configuration](https://supabase.com/dashboard/project/cxjhlaavfsavokqflxti/auth/url-configuration).
-2. Setze **Site URL** und **Redirect URLs** auf `https://hennerdesma-art.github.io/cimbria-bierpong-cup/`.
-3. Öffne die Website unter `#/admin` und fordere einen Anmeldelink an `Henner@desma.africa` an.
-4. Folge dem Magic Link aus deiner E-Mail. Erst dann wird der Supabase-Auth-Benutzer mit bestätigter Identität angelegt/freigeschaltet.
-5. Öffne in der Admin-Oberfläche nach einem Test die Gast-Anmeldung.
+## Admin-Anmeldung
+- Die freigegebene E-Mail-Adresse verfügt bereits über einen bestätigten Supabase-Auth-Benutzer mit Admin-Berechtigung.
+- Öffne `https://hennerdesma-art.github.io/cimbria-bierpong-cup/#/admin` und melde dich mit deiner Admin-E-Mail und deinem persönlichen Passwort an.
+- **Kein Magic Link, keine erneute E-Mail-Bestätigung und kein E-Mail-Rate-Limit erforderlich.**
+- Das Passwort wird serverseitig durch Supabase Auth geprüft. Es darf niemals in HTML/JavaScript/SQL-Migrationen oder im öffentlichen GitHub-Repository stehen.
+- Nach erfolgreichem Login kannst du in der Admin-Oberfläche die Gast-Anmeldung freigeben.
 
 **Ausgangsstatus:** Keine echten Teams, vier freie Tische, acht leere Gruppen. Die Anmeldung bleibt bis zur Freigabe durch den Admin geschlossen.
 

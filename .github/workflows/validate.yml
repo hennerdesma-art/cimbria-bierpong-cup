@@ -1,7 +1,7 @@
 name: Validate Cimbria Website
 on:
   push:
-    branches: [main, feat/supabase-auth-live]
+    branches: [main, feat/supabase-auth-live, feat/admin-password-login]
   pull_request:
     branches: [main]
 permissions:

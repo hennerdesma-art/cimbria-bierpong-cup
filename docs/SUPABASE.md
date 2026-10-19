@@ -5,16 +5,17 @@
 ## Status
 - SQL-Migrationen angewendet; RLS, Realtime, serverseitige Validierung und Admin-Allowlist eingerichtet.
 - Die E-Mail `henner@desma.africa` ist in `cimbria_private.admin_email_allowlist` freigegeben.
-- Ein Auth-Benutzer unter dieser E-Mail existiert **erst nach der ersten bestätigten Anmeldung per Magic Link**.
+- Der Auth-Benutzer ist bereits vorhanden, E-Mail verifiziert und Admin-Recht aktiv.
 - Der Registrierungs-Endpunkt `cimbria-register-team` ist aktiv. Die Anmeldung ist standardmäßig geschlossen.
 - Vier freie Spieltische und Gruppen A–H sind angelegt; keine echten Teilnehmer.
 
-## Admin-Einrichtung
-In [Supabase Authentication → URL Configuration](https://supabase.com/dashboard/project/cxjhlaavfsavokqflxti/auth/url-configuration):
-- **Site URL:** `https://hennerdesma-art.github.io/cimbria-bierpong-cup/`
-- **Redirect URLs:** `https://hennerdesma-art.github.io/cimbria-bierpong-cup/`
-
-Danach `#/admin` öffnen und Anmeldelink an die freigegebene E-Mail senden. Nach der Verifikation legt ein Trigger den `admin_users`-Datensatz an. E-Mail und Bestätigung werden bei jedem Admin-Zugriff geprüft; andere angemeldete Benutzer erhalten keine Adminrechte.
+## Admin-Login (E-Mail und Passwort)
+- Öffne die Website unter `#/admin` und melde dich mit der freigegebenen E-Mail-Adresse sowie deinem Supabase-Auth-Passwort an.
+- Die Website nutzt `supabase.auth.signInWithPassword()`; kein Versand von E-Mails ist für den Login nötig.
+- Der bestehende Auth-Benutzer ist bereits verifiziert und in `admin_users` aktiviert.
+- RLS und `cimbria_private.admin_email_allowlist` bleiben unverändert und verhindern fremde Admin-Zugriffe.
+- Die Zugangsdaten dürfen **nicht** in öffentliche Dateien committed werden. Das Passwort nur über den offiziellen Supabase-Auth-Admin-API- oder Account-Workflow ändern.
+- Bei Kennwortverlust erfolgt der Reset über Supabase Authentication (ggf. mit E-Mail-Versand).
 
 ## Datenmodell
 `tournaments` (Phase, Anmeldestatus, Version), `teams` (Teamnamen),
