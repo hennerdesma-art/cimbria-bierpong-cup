@@ -5,6 +5,13 @@
  */
 (() => {
   'use strict';
+  const CLOUD = window.CimbriaCloud;
+  if (!CLOUD || CLOUD.broken) {
+    document.getElementById('app').innerHTML =
+      '<main style="max-width:620px;margin:15vh auto;padding:24px;color:#fff;text-align:center">' +
+      '<h1>Cimbria Cup</h1><p>Die sichere Verbindung zum Turniersystem konnte nicht geladen werden. Bitte aktualisiere die Seite.</p></main>';
+    return;
+  }
 
   const VERSION = 3;
   const STORE_KEY = 'cimbria-cup-design-v2-demo';
@@ -96,15 +103,15 @@
     } catch(err) { console.warn('Lokale Demo-Daten konnten nicht geladen werden:',err); }
     return seedData();
   }
-  let state = load();
+  // Never expose local demo teams as genuine live registrations.
+  let state = {version:VERSION,phase:'registration',registrationOpen:false,isPublished:false,
+    teams:[],groups:[],matches:[],playoffMatches:[],tables:[],log:[],revision:0};
   let ui = {
     page: 'home', mobileMenu:false, adminTab:'tables', liveFilter:'all', liveGroup:'A',
+    saving:false, cloudLoading:true, authSent:false, authEmail:'Henner@desma.africa',
     liveSearch:'', liveExpanded:false, teamSearch:'', selections:{}, registration:{teamName:'',players:['','']}, toast:null
   };
-  function persist(){
-    try { localStorage.setItem(STORE_KEY,JSON.stringify(state)); }
-    catch(err) { alert('Dein Browser konnte die Demo-Daten nicht lokal speichern. Bitte privaten Modus oder Speicherplatz prüfen.'); }
-  }
+  function persist(){ /* Live state is persisted in Supabase, never in localStorage. */ }
   let toastTimeout = null;
   function notify(message,error=false){
     ui.toast={message,error};
@@ -116,7 +123,20 @@
     state.log.unshift({id:`log-${Date.now()}-${Math.random().toString(16).slice(2,5)}`,time:Date.now(),text});
     state.log=state.log.slice(0,35);
   }
-  function commit(message,error=false){persist();notify(message,error);}
+  function commit(message,error=false){
+    if (ui.saving) return;
+    ui.saving=true;
+    render();
+    CLOUD.save(state).then(next=>{
+      state=next;
+      ui.saving=false;
+      notify(message,error);
+    }).catch(async err=>{
+      ui.saving=false;
+      try { state=await CLOUD.reload(); } catch(loadError){ console.warn(loadError); }
+      notify('Nicht gespeichert: '+err.message,true);
+    });
+  }
   const navItems = [
     {key:'home',label:'Home',icon:'home'},
     {key:'live',label:'Live',icon:'radio'},
@@ -150,7 +170,7 @@
       const pairs=[];
       for(let i=0;i<ring.length/2;i++){
         const a=ring[i], b=ring[ring.length-1-i];
-        if(a && b) pairs.push({id:`${prefix}-${round}-${i}`,type,group,teamAId:a,teamBId:b,winnerId:null,status:'open',tableId:null,round:round+roundOffset,position:i,completedAt:null});
+        if(a && b) pairs.push({id:CLOUD?crypto.randomUUID():`${prefix}-${round}-${i}`,type,group,teamAId:a,teamBId:b,winnerId:null,status:'open',tableId:null,round:round+roundOffset,position:i,completedAt:null});
       }
       rounds.push(pairs);
       ring=[ring[0],ring[ring.length-1],...ring.slice(1,-1)];
@@ -291,8 +311,8 @@
   function finishMatch(id,winnerId){
     const m=getMatch(id);
     if(!m||m.status!=='live'||![m.teamAId,m.teamBId].includes(winnerId)){notify('Ungültige Spielauswahl. Bitte das laufende Spiel wählen.',true);return;}
-    if(!window.confirm(`Sieger bestätigen: ${teamLabel(winnerId)}?\n\nDas Ergebnis wird in der lokalen Demo gespeichert.`))return;
-    m.winnerId=winnerId;m.status='done';m.completedAt=Date.now();m.tableId=null;
+    if(!window.confirm(`Sieger bestätigen: ${teamLabel(winnerId)}?\n\nDas Ergebnis wird für alle Besucher live gespeichert.`))return;
+    m.winnerId=winnerId;m.status='done';m.completedAt=Date.now();m.playedTableId=m.tableId;m.tableId=null;
     advanceWinner(m);
     logAction(`${teamLabel(winnerId)} gewinnt gegen ${teamLabel(winnerId===m.teamAId?m.teamBId:m.teamAId)}.`);
     commit(`Sieger gespeichert: ${teamLabel(winnerId)}. Tabelle und Spielplan aktualisiert.`);
@@ -315,6 +335,7 @@
     commit('Ergebnis korrigiert.');
   }
   function completeDemoGroups(){
+    if(CLOUD){notify('Ergebnisse können online ausschließlich durch echte Spiele entstehen.',true);return;}
     if(state.phase!=='groups'){notify('Die Gruppensimulation ist nur während der Gruppenphase möglich.',true);return;}
     if(state.matches.some(m=>m.status==='ready'||m.status==='live')){notify('Zuerst alle zugewiesenen Spiele beenden oder freigeben.',true);return;}
     if(!window.confirm('Alle offenen regulären Gruppenspiele mit Demo-Ergebnissen abschließen? Dies dient nur zum Testen des Playoff-Baums.'))return;
@@ -349,12 +370,12 @@
     ];
     const playoff=[];
     pairings.forEach(([ga,ra,gb,rb],i)=>playoff.push({
-      id:`po-0-${i}`,type:'playoff',round:0,position:i,order:i,
+      id:crypto.randomUUID(),type:'playoff',round:0,position:i,order:i,
       teamAId:qualified[ga][ra],teamBId:qualified[gb][rb],
       winnerId:null,status:'open',tableId:null,completedAt:null
     }));
     for(let r=1;r<4;r++)for(let i=0;i<8/2**r;i++)playoff.push({
-      id:`po-${r}-${i}`,type:'playoff',round:r,position:i,order:i,
+      id:crypto.randomUUID(),type:'playoff',round:r,position:i,order:i,
       teamAId:null,teamBId:null,winnerId:null,status:'open',tableId:null,completedAt:null
     });
     state.playoffMatches=playoff;
@@ -371,15 +392,25 @@
     if(teamName.length<3||teamName.length>35){notify('Der Teamname muss 3 bis 35 Zeichen haben.',true);return;}
     if(players.length<2||players.length>4||players.some(name=>name.length<2||name.length>50)){notify('Bitte 2 bis 4 vollständige Spielernamen eintragen (je 2–50 Zeichen).',true);return;}
     if(state.teams.some(t=>t.name.toLocaleLowerCase('de')===teamName.toLocaleLowerCase('de'))){notify('Dieser Teamname ist bereits vergeben.',true);return;}
-    state.teams.push({id:`team-${Date.now()}-${Math.floor(Math.random()*1000)}`,name:teamName,players,createdAt:Date.now()});
+    if (CLOUD){
+      if(ui.saving)return;
+      ui.saving=true;render();
+      CLOUD.guestRegister(teamName,players).then(async result=>{
+        ui.registration={teamName:'',players:['','']};
+        ui.saving=false;
+        notify('Willkommen, '+result.team+'! Eure Anmeldung wurde gespeichert.');
+      }).catch(err=>{ui.saving=false;notify(err.message,true);});
+      return;
+    }
+    state.teams.push({id:crypto.randomUUID(),name:teamName,players,createdAt:Date.now()});
     logAction(`Neues Team registriert: ${teamName} (${players.length} Personen).`);
     ui.registration={teamName:'',players:['','']};
     commit(`Willkommen, ${teamName}! Eure Anmeldung wurde in dieser Browser-Demo gespeichert.`);
   }
   function addTable(){
-    if(state.tables.length>=16){notify('In der Demo sind maximal 16 Tische möglich.',true);return;}
-    const next=Math.max(0,...state.tables.map(t=>parseInt(t.id.replace('table-',''),10)||0))+1;
-    state.tables.push({id:`table-${next}`,name:`Tisch ${next}`,active:true});
+    if(state.tables.length>=16){notify('Maximal 16 Tische möglich.',true);return;}
+    const next=state.tables.length+1;
+    state.tables.push({id:crypto.randomUUID(),name:`Tisch ${next}`,active:true,sortOrder:next});
     logAction(`Tisch ${next} hinzugefügt.`);
     commit('Neuer Tisch hinzugefügt.');
   }
@@ -403,6 +434,7 @@
     commit('Tisch erfolgreich umbenannt.');
   }
   function resetDemo(){
+    if(CLOUD){notify('Ein Zurücksetzen des Online-Turniers ist deaktiviert.',true);return;}
     if(!window.confirm('Alle lokalen Änderungen einschließlich Anmeldungen, Ergebnissen und Tischen löschen und die 24 Demo-Teams wiederherstellen?'))return;
     state=seedData();
     ui.selections={};ui.registration={teamName:'',players:['','']};
@@ -418,7 +450,7 @@
         <nav class="desktop-nav" aria-label="Hauptnavigation">
           ${publicNav.map(n => `<a class="nav-item ${ui.page===n.key?'active':''}" href="#/${n.key}">${n.label}${n.key==='live'&&isLive?'<span class="nav-live-dot"></span>':''}</a>`).join('')}
         </nav>
-        <div class="header-right"><a class="btn btn-gold top-join" href="#/registration">${icon('users')} Team anmelden</a><a class="admin-shortcut ${ui.page==='admin'?'active':''}" href="#/admin" title="Turnierleitung (Demo)" aria-label="Admin-Dashboard">${icon('settings')}</a>
+        <div class="header-right"><a class="btn btn-gold top-join" href="#/registration">${icon('users')} Team anmelden</a><a class="admin-shortcut ${ui.page==='admin'?'active':''}" href="#/admin" title="Turnierleitung" aria-label="Admin-Dashboard">${icon('settings')}</a>
           <button class="menu-button" type="button" data-action="menu" aria-label="Menü öffnen" aria-expanded="${ui.mobileMenu}">${icon(ui.mobileMenu?'close':'menu','svg-lg')}</button>
         </div>
       </div><nav class="mobile-nav ${ui.mobileMenu?'open':''}" aria-label="Mobiles Menü">
@@ -495,7 +527,7 @@
     return `${pageBanner('MEHR ALS EIN SPIEL','Team <em>anmelden</em>','Erlebt den Cimbria Bierpong Cup mit eurem Team. Zwei Personen spielen, bis zu vier dürfen dabei sein.')}
       <div class="container content-pad"><div class="v2-registration-grid"><section class="v2-glass v2-registration-card">
         <div class="v2-form-title"><span class="v2-form-icon">${icon('users')}</span><div><h2>Team anmelden</h2><p>Sichert euch euren Platz für das nächste Turnier.</p></div></div>
-        ${!open?`<div class="notice danger-note">${icon('info')}<div>${spots===0?'Alle Plätze vergeben.':'Anmeldung geschlossen.'} Du kannst die Demo im Admin-Bereich zurücksetzen.</div></div>`:''}
+        ${!open?`<div class="notice danger-note">${icon('info')}<div>${spots===0?'Alle Plätze vergeben.':'Anmeldung geschlossen.'} Die Turnierleitung kann die Anmeldung bei Bedarf öffnen.</div></div>`:''}
         <form id="team-registration" ${!open?'aria-disabled="true"':''}>
           <div class="field"><label for="team-name">Teamname <span class="gold">*</span></label><input id="team-name" name="teamName" data-draft="name" maxlength="35" minlength="3" value="${escape(ui.registration.teamName)}" placeholder="z. B. Die Zirkelfreunde" autocomplete="off" ${!open?'disabled':''} required/><span class="field-note">Euer Teamname erscheint im Spielplan und den Tabellen.</span></div>
           <div class="player-heading"><div><h3>${icon('users')} Teammitglieder</h3><p>Spieler 1 und 2 sind Pflicht; weitere sind optional.</p></div><span class="badge gold">${ui.registration.players.length} / 4</span></div>
@@ -503,10 +535,10 @@
           <button type="button" data-action="add-player" class="btn btn-quiet btn-sm v2-add-player" ${!open||ui.registration.players.length>=4?'disabled':''}>${icon('plus')} Spieler hinzufügen</button>
           <div class="v2-inline-notice">${icon('info')} <span>Es werden ausschließlich <b>Siege und Niederlagen</b> erfasst. Pro Begegnung spielen zwei Personen aus eurem Team.</span></div>
           <button type="submit" class="btn btn-gold v2-submit" ${!open?'disabled':''}>${icon('users')} Jetzt Team anmelden ${icon('arrow')}</button>
-          <div class="privacy-note">Design-Demo: Anmeldungen werden aktuell nur in diesem Browser gespeichert, nicht online veröffentlicht.</div>
+          <div class="privacy-note">Eure Anmeldung wird zentral im Cimbria-Turniersystem gespeichert.</div>
         </form>
       </section><aside class="v2-glass v2-info-card"><div class="v2-section-head">${icon('trophy')}<h2>Wichtigste Infos</h2></div>
-        ${[["users","2–4 Spieler","Zwei aktive Spieler pro Partie. Zusätzliche Mitglieder können wechseln."],["grid","Maximal 32 Teams","24 bis 32 Teams nehmen am Cup teil."],["trophy","Gruppen + Playoffs","8 Gruppen, anschließend K.-o.-Runde mit 16 Teams."],["radio","Ergebnisse live verfolgen","Alle bestätigten Siege sind direkt in der Demo sichtbar."]].map(([ico,t,d])=>`<div class="v2-info-item"><div class="v2-info-icon">${icon(ico)}</div><div><strong>${t}</strong><p>${d}</p></div></div>`).join('')}
+        ${[["users","2–4 Spieler","Zwei aktive Spieler pro Partie. Zusätzliche Mitglieder können wechseln."],["grid","Maximal 32 Teams","24 bis 32 Teams nehmen am Cup teil."],["trophy","Gruppen + Playoffs","8 Gruppen, anschließend K.-o.-Runde mit 16 Teams."],["radio","Ergebnisse live verfolgen","Alle bestätigten Siege sind für alle Besucher live sichtbar."]].map(([ico,t,d])=>`<div class="v2-info-item"><div class="v2-info-icon">${icon(ico)}</div><div><strong>${t}</strong><p>${d}</p></div></div>`).join('')}
         <div class="v2-seat-card"><div class="wide-line"><span>Aktueller Anmeldestand</span><strong>${state.teams.length} / ${MAX_TEAMS}</strong></div><div class="progress-track"><div class="progress-bar" style="width:${Math.min(100,state.teams.length/MAX_TEAMS*100)}%"></div></div><small>${spots} Plätze verfügbar · ${open?'Anmeldung geöffnet':'Anmeldung geschlossen'}</small></div>
         <a href="#/info" class="v2-info-link">Turnierregeln & häufige Fragen ${icon('arrow')}</a>
       </aside></div></div>`;
@@ -550,10 +582,12 @@
     </div>`;
   }
   function renderTeams(){
-    const teams=state.teams.filter(t=>!ui.teamSearch||`${t.name} ${t.players.join(' ')}`.toLocaleLowerCase('de').includes(ui.teamSearch.toLocaleLowerCase('de')));
+    const teams=state.teams.filter(t=>!ui.teamSearch||(CLOUD.isAdmin?
+      `${t.name} ${t.players.join(' ')}`:t.name).toLocaleLowerCase('de').includes(ui.teamSearch.toLocaleLowerCase('de')));
     return `${pageBanner('DIE KONKURRENZ','Alle <em>Teams</em>','Lerne die Mannschaften kennen, die um den Cimbria Cup spielen.')}
-      <div class="container content-pad"><div class="v2-glass v2-panel"><div class="v2-panel-title"><div>${icon('users')}<span>${state.teams.length} TEAMS ANGEMELDET</span></div><a href="#/registration">Team anmelden ${icon('arrow')}</a></div><input id="team-search" class="search-input v2-team-search" type="search" placeholder="Nach Team oder Mitglied suchen ..." aria-label="Teams suchen" value="${escape(ui.teamSearch||'')}">
-      <div class="v2-teams-grid">${teams.map(t=>`<div class="v2-team-card"><div class="v2-team-badge">${icon('users')}</div><strong>${escape(t.name)}</strong><span>${t.players.length} Teammitglieder</span><p>${t.players.map(escape).join(' · ')}</p></div>`).join('')||'<p class="muted">Keine Teams gefunden.</p>'}</div></div></div>`;
+      <div class="container content-pad"><div class="v2-glass v2-panel"><div class="v2-panel-title"><div>${icon('users')}<span>${state.teams.length} TEAMS ANGEMELDET</span></div><a href="#/registration">Team anmelden ${icon('arrow')}</a></div><input id="team-search" class="search-input v2-team-search" type="search" placeholder="Nach Team suchen ..." aria-label="Teams suchen" value="${escape(ui.teamSearch||'')}">
+      <div class="v2-teams-grid">${teams.map(t=>`<div class="v2-team-card"><div class="v2-team-badge">${icon('users')}</div><strong>${escape(t.name)}</strong><span>${CLOUD.isAdmin?t.players.length+' Teammitglieder':'Angemeldet'}</span>
+        <p>${CLOUD.isAdmin?t.players.map(escape).join(' · '):'Cimbria Bierpong Cup'}</p></div>`).join('')||'<p class="muted">Keine Teams gefunden.</p>'}</div></div></div>`;
   }
   function renderSchedule(){
     const matches=allMatches();
@@ -651,11 +685,27 @@
     const activeMatchCount=allMatches().filter(m=>m.status==='ready'||m.status==='live').length;
     return `<div class="card-title">Turniersteuerung</div><p class="muted text-sm" style="margin:8px 0 21px;line-height:1.7">Hier startet die Turnierleitung die nächste Phase. Bestehende Ergebnisse werden vor versehentlichem Überschreiben geschützt.</p>
       <div class="subtle-frame"><div class="panel-caption">SCHRITT 1 · GRUPPENPHASE</div><h3 class="serif" style="font-size:22px;margin:8px 0">Gruppen auslosen</h3><p class="muted text-sm" style="line-height:1.7;margin:0 0 16px">24–32 Teams werden automatisch auf acht Gruppen verteilt. Für jede Gruppe wird jeder gegen jeden angesetzt.</p><button class="btn btn-gold" data-action="start-groups" ${state.phase!=='registration'||state.teams.length<24?'disabled':''}>${icon('shuffle')} Gruppenphase starten</button></div>
-      <div class="subtle-frame" style="margin-top:14px"><div class="panel-caption">SCHRITT 2 · ERGEBNISSE</div><h3 class="serif" style="font-size:22px;margin:8px 0">Gruppenspiele abschließen</h3><p class="muted text-sm" style="line-height:1.7;margin:0 0 16px">Offene Gruppenspiele: <strong>${remain}</strong>. Für das Testen des Turnierbaums kannst du ausstehende Ergebnisse automatisch simulieren.</p><button class="btn btn-quiet" data-action="finish-demo-groups" ${state.phase!=='groups'||!remain||activeMatchCount?'disabled':''}>${icon('spark')} Restliche Spiele simulieren</button></div>
+      <div class="subtle-frame" style="margin-top:14px"><div class="panel-caption">SCHRITT 2 · ECHTE ERGEBNISSE</div><h3 class="serif" style="font-size:22px;margin:8px 0">Gruppenspiele abschließen</h3><p class="muted text-sm" style="line-height:1.7;margin:0">Noch offen: <strong>${remain}</strong>. Bitte Sieger an den jeweiligen Tischen bestätigen.</p></div>
       <div class="subtle-frame" style="margin-top:14px"><div class="panel-caption">SCHRITT 3 · PLAYOFFS</div><h3 class="serif" style="font-size:22px;margin:8px 0">Playoffs freigeben</h3><p class="muted text-sm" style="line-height:1.7;margin:0 0 16px">Die acht Gruppensieger und acht Gruppenzweiten werden automatisch für das Achtelfinale gesetzt. Bei ungelösten Gleichständen ist dieser Schritt gesperrt.</p><button class="btn btn-gold" data-action="start-playoffs" ${matchesReady?'':'disabled'}>${icon('trophy')} Playoffs starten</button></div>
-      <div class="admin-separator"></div><div class="wide-line"><div><strong class="text-sm">Demo zurücksetzen</strong><p class="muted text-xs" style="margin:6px 0 0">Löscht alle lokal gespeicherten Änderungen.</p></div><button class="btn btn-danger btn-sm" data-action="reset">${icon('rotate')} Zurücksetzen</button></div>`;
+      <div class="admin-separator"></div><div class="subtle-frame"><h3 class="serif" style="font-size:22px;margin:0 0 8px">Öffentliche Teamanmeldung</h3>
+       <p class="muted text-sm">Anmeldungen sind ${state.registrationOpen?'geöffnet':'geschlossen'}. Gäste benötigen kein Benutzerkonto.</p>
+       <button class="btn btn-outline" data-action="toggle-registration" ${state.phase!=='registration'||ui.saving?'disabled':''}>${icon(state.registrationOpen?'lock':'users')} ${state.registrationOpen?'Anmeldung schließen':'Anmeldung öffnen'}</button></div>`;
   }
   function renderAdmin(){
+    if (!CLOUD.isAdmin) {
+      return `${pageBanner('TURNIERLEITUNG · GESCHÜTZT','Admin <em>Login</em>','Nur freigegebene Turnierleiter dürfen Spiele und Ergebnisse verwalten.')}
+      <div class="container content-pad"><section class="v2-glass v2-panel" style="max-width:540px;margin:0 auto">
+      <div class="v2-form-title"><span class="v2-form-icon">${icon('lock')}</span><div>
+      <h2>Sicher anmelden</h2><p>Wir senden dir einen einmaligen Anmeldelink an deine E-Mail-Adresse.</p></div></div>
+      ${CLOUD.email?`<div class="notice">${icon('info')} Angemeldet als ${escape(CLOUD.email)}, aber für die Turnierleitung nicht freigeschaltet.</div>`:''}
+      <form id="cimbria-admin-login"><div class="field"><label for="admin-email">Admin-E-Mail</label>
+      <input type="email" id="admin-email" name="email" autocomplete="email" required
+      value="${escape(ui.authEmail)}" placeholder="name@example.com"></div>
+      <button class="btn btn-gold v2-submit" type="submit" ${ui.saving?'disabled':''}>${icon('mail')} Anmeldelink senden</button></form>
+      ${ui.authSent?`<div class="notice" style="margin-top:16px">${icon('check')} Bitte Posteingang prüfen und den Link öffnen. Die Adresse muss in Supabase freigegeben sein.</div>`:''}
+      <p class="muted text-sm" style="margin-top:20px">Teilnehmer und Zuschauer benötigen keinen Account.</p>
+      </section></div>`;
+    }
     const activeCount=state.tables.filter(t=>t.active).length;
     const liveCount=allMatches().filter(m=>m.status==='live').length;
     const complete=allMatches().filter(m=>m.status==='done').length;
@@ -664,7 +714,8 @@
     const groupTotal=groupMatches().length;
     return `${pageBanner('TURNIERLEITUNG · HYBRIDMODUS','Admin <em>Control Center</em>','Tische steuern. Begegnungen verwalten. Den Weg zum Finale freigeben.')}
       <div class="container content-pad v2-admin-page">
-      <div class="v2-admin-notice">${icon('lock')} <span><b>Lokale Design-Demo:</b> Noch kein Admin-Login oder zentraler Datenspeicher. Nicht als öffentliche Turnierverwaltung verwenden.</span></div>
+      <div class="v2-admin-notice">${icon('shield')} <span><b>Geschützter Admin-Bereich</b> · ${escape(CLOUD.email)} · Änderungen werden in Supabase gespeichert.</span>
+      <button class="btn btn-quiet btn-sm" data-action="admin-logout">Abmelden</button></div>
       <div class="v2-admin-top"><section class="v2-glass v2-panel v2-admin-phase"><div class="v2-panel-title"><div>${icon('grid')}<span>TURNIERSTATUS</span></div></div>
         <span class="v2-eyebrow">Aktuelle Phase</span><h2>${state.phase==='registration'?'Anmeldung':state.phase==='groups'?'Gruppenphase':'Playoffs'}</h2><p>${state.teams.length} / 32 Teams registriert</p>
         <div class="progress-track"><div class="progress-bar" style="width:${groupTotal?Math.round(groupDone/groupTotal*100):0}%"></div></div>
@@ -712,7 +763,21 @@
   }
   function handleAction(btn){
     const action=btn.dataset.action;
+    const publicActions=['menu','live-filter','live-expand','group',
+      'add-player','remove-player','close-toast'];
+    if(ui.saving && !['menu','close-toast'].includes(action))return;
+    if(!CLOUD.isAdmin && !publicActions.includes(action))return;
     switch(action){
+      case 'toggle-registration':
+        if(state.phase!=='registration')break;
+        state.registrationOpen=!state.registrationOpen;
+        commit(state.registrationOpen?'Anmeldung ist geöffnet.':'Anmeldung wurde geschlossen.');
+        break;
+      case 'admin-logout':
+        ui.saving=true;
+        CLOUD.logout().then(()=>{ui.saving=false;notify('Abgemeldet.');})
+          .catch(e=>{ui.saving=false;notify(e.message,true);});
+        break;
       case 'menu':ui.mobileMenu=!ui.mobileMenu;render();break;
       case 'admin-tab':ui.adminTab=btn.dataset.tab;render();break;
       case 'live-filter':ui.liveFilter=btn.dataset.filter;ui.liveExpanded=false;render();break;
@@ -773,7 +838,17 @@
     if(tableId)ui.selections[tableId]=event.target.value;
   });
   document.addEventListener('submit',event=>{
+    if(event.target.id==='cimbria-admin-login'){
+      event.preventDefault();
+      if(ui.saving)return;
+      const email=event.target.elements.email.value.trim();
+      ui.authEmail=email;ui.authSent=false;ui.saving=true;render();
+      CLOUD.sendAdminLink(email).then(()=>{ui.authSent=true;ui.saving=false;render();})
+        .catch(e=>{ui.saving=false;notify('Anmeldelink konnte nicht versendet werden: '+e.message,true);});
+      return;
+    }
     if(event.target.id!=='team-registration')return;
+    if(ui.saving){event.preventDefault();return;}
     event.preventDefault();
     const form=event.target;
     ui.registration.teamName=form.elements.teamName.value;
@@ -787,6 +862,17 @@
     }
   });
   ui.page=routeFromHash();
-  persist();
   render(false);
+  CLOUD.initialize(next=>{
+    state=next;
+    ui.cloudLoading=false;
+    render();
+  },(admin,email)=>{
+    if(admin)ui.authSent=false;
+    if(email)ui.authEmail=email;
+    render();
+  }).catch(err=>{
+    ui.cloudLoading=false;
+    notify('Turnierdaten konnten nicht geladen werden: '+err.message,true);
+  });
 })();
