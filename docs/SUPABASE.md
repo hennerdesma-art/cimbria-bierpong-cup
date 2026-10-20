@@ -58,3 +58,12 @@
 - Realtime publication includes `tv_cues`. TV also polls periodically to recover from temporary disconnections.
 - The TV uses the **public** Supabase Publishable Key only. Never expose the service role credential in `tv.js` or the browser.
 - V5 test scenes under `tv.html?preview=intro`, `?preview=winner` and `?preview=bracket` use fictional data exclusively in browser memory; they do not write to Supabase.
+
+
+## Turnierstart ab 12 Teams (20.10.2026)
+- Die gültige Mindestteilnehmerzahl ist **12 Teams**. Die Obergrenze bleibt über **Admin → Turnier** individuell einstellbar (12–512 Teams).
+- Mit **12–15 Anmeldungen** werden vier Gruppen (A–D) mit mindestens drei Teams ausgelost. Die beiden Bestplatzierten jeder Gruppe qualifizieren sich für ein **8er-Viertelfinale** mit sieben Playoff-Begegnungen (Rundenindex 1, 2, 3).
+- Ab **16 Anmeldungen** wird der bisherige Modus mit acht Gruppen (A–H), 16er-Achtelfinale und 15 Playoff-Begegnungen verwendet.
+- Beim Auslosen speichert `cimbria_admin_save_state` die passenden Werte in `group_count` und `playoff_teams` atomar. Die Datenbank überprüft Mindestanzahl, Gruppenbelegung und die richtige Anzahl der Playoff-Spiele.
+- Die Hauptwebsite zeigt ausschließlich ausgeloste Gruppen. Der Turnierbaum blendet im 8er-Modus das Achtelfinale aus, ebenso die TV-Ansicht.
+- Die aktuellen Registrierungen und Turnierergebnisse wurden durch diese Migration **nicht** zurückgesetzt oder verändert. Die Auslosung wird nicht automatisch gestartet.

@@ -26,7 +26,11 @@
   const teamIconImg = (id,cl='team-icon-inline') =>
     `<img class="${cl}" src="${teamIconUrl(id)}" alt="" loading="lazy" aria-hidden="true">`;
   const MAX_TEAMS = () => state.maxTeams || 32;
-  const MIN_TEAMS = () => state.minTeams || 16;
+  const MIN_TEAMS = () => state.minTeams || 12;
+  const plannedGroupCount = () => state.groups.length || (state.teams.length < 16 ? 4 : 8);
+  const activeGroupNames = () => state.groups.length
+    ? state.groups.map(g=>g.name) : GROUPS.slice(0,plannedGroupCount());
+  const playoffSize = () => plannedGroupCount()*2;
   const DEMO_NAMES = [
     'Zirkelfreunde','BierBuddies','Pongstars','Cup Kings',
     'Goldene Becher','The Last Cups','Cimbria Titans','Team Feierabend',
@@ -207,8 +211,9 @@
     if(state.teams.length<MIN_TEAMS() || state.teams.length>MAX_TEAMS()){notify(`Für den Start benötigen wir ${MIN_TEAMS()}–${MAX_TEAMS()} Teams.`,true);return;}
     if(!window.confirm(`Gruppenphase mit ${state.teams.length} Teams starten? Die Anmeldung wird geschlossen und alle Begegnungen werden erstellt.`))return;
     const randomized=shuffle(state.teams.map(t=>t.id));
-    const groupItems=GROUPS.map(name=>({name,teamIds:[]}));
-    randomized.forEach((id,i)=>groupItems[i%8].teamIds.push(id));
+    const groupNames=GROUPS.slice(0,state.teams.length < 16 ? 4 : 8);
+    const groupItems=groupNames.map(name=>({name,teamIds:[]}));
+    randomized.forEach((id,i)=>groupItems[i%groupItems.length].teamIds.push(id));
     const rounds=groupItems.map(g=>createRoundRobin(g.teamIds,`grp-${g.name}`,g.name,'group'));
     const matchList=[];
     const maxRounds=Math.max(...rounds.map(r=>r.length));
@@ -376,13 +381,26 @@
   function startPlayoffs(){
     if(state.phase!=='groups'){notify('Playoffs können erst nach der Gruppenphase starten.',true);return;}
     if(!state.groups.length||groupMatches().some(m=>m.status!=='done')){notify('Zuerst alle regulären Gruppenspiele abschließen.',true);return;}
-    const rankings=GROUPS.map(g=>computeRanking(g));
+    const groupNames=state.groups.map(g=>g.name);
+    if(groupNames.length!==4 && groupNames.length!==8){
+      notify('Das Gruppenformat ist ungültig. Bitte Turnierkonfiguration prüfen.',true);return;
+    }
+    const small=groupNames.length===4;
+    const rankings=groupNames.map(g=>computeRanking(g));
     if(rankings.some(r=>r.unresolved.length||r.pending.length)||tiebreaksUnfinished()){
       notify('Vor dem Playoff-Start müssen sämtliche Entscheidungsspiele abgeschlossen und alle Platzierungen eindeutig sein.',true);return;
     }
+    if(rankings.some(r=>r.ranking.length<2)){
+      notify('Jede Gruppe benötigt zwei eindeutig platzierte Teams.',true);return;
+    }
     if(!window.confirm('Playoffs mit den jeweils zwei besten Teams starten? Gruppenergebnisse werden anschließend gesperrt.'))return;
-    const qualified=Object.fromEntries(GROUPS.map((g,i)=>[g,{first:rankings[i].ranking[0]?.id,second:rankings[i].ranking[1]?.id}]));
-    const pairings=[
+    const qualified=Object.fromEntries(groupNames.map((g,i)=>[g,{
+      first:rankings[i].ranking[0].id,second:rankings[i].ranking[1].id
+    }]));
+    const pairings=small?[
+      ['A','first','B','second'],['C','first','D','second'],
+      ['B','first','A','second'],['D','first','C','second']
+    ]:[
       ['A','first','B','second'],['C','first','D','second'],
       ['E','first','F','second'],['G','first','H','second'],
       ['B','first','A','second'],['D','first','C','second'],
@@ -390,17 +408,17 @@
     ];
     const playoff=[];
     pairings.forEach(([ga,ra,gb,rb],i)=>playoff.push({
-      id:crypto.randomUUID(),type:'playoff',round:0,position:i,order:i,
+      id:crypto.randomUUID(),type:'playoff',round:small?1:0,position:i,order:i,
       teamAId:qualified[ga][ra],teamBId:qualified[gb][rb],
       winnerId:null,status:'open',tableId:null,completedAt:null
     }));
-    for(let r=1;r<4;r++)for(let i=0;i<8/2**r;i++)playoff.push({
+    for(let r=small?2:1;r<4;r++)for(let i=0;i<8/2**r;i++)playoff.push({
       id:crypto.randomUUID(),type:'playoff',round:r,position:i,order:i,
       teamAId:null,teamBId:null,winnerId:null,status:'open',tableId:null,completedAt:null
     });
     state.playoffMatches=playoff;
     state.phase='playoffs';
-    logAction('Achtelfinale und Playoff-Baum offiziell freigegeben.');
+    logAction((small?'Viertelfinale':'Achtelfinale')+' und Playoff-Baum offiziell freigegeben.');
     commit('Playoffs gestartet! Der Turnierbaum ist jetzt befüllt.');
   }
   function tiebreaksUnfinished(){return state.matches.some(m=>m.type==='tiebreak'&&m.status!=='done');}
@@ -523,20 +541,20 @@
       <h1 class="landing-title">CIMBRIA<span>BIERPONG CUP</span></h1>
       <p class="landing-text">Das legendäre Bierpong-Turnier.<br>Gute Drinks. Starke Teams. Unvergessliche Nächte.</p>
       <div class="hero-actions landing-actions"><a class="btn btn-gold" href="#/registration">${icon('users')} Team anmelden ${icon('arrow')}</a><a class="btn btn-outline" href="#/live">${icon('radio')} Live verfolgen ${icon('arrow')}</a></div>
-      <div class="hero-facts"><span>${icon('users')} ${state.teams.length} / ${MAX_TEAMS()} Teams</span><span>${icon('grid')} 8 Gruppen</span><span>${icon('trophy')} 16 Playoff-Plätze</span></div>
+      <div class="hero-facts"><span>${icon('users')} ${state.teams.length} / ${MAX_TEAMS()} Teams</span><span>${icon('grid')} ${plannedGroupCount()} Gruppen</span><span>${icon('trophy')} ${playoffSize()} Playoff-Plätze</span></div>
     </div></section>
     <section class="home-dashboard container"><div class="v2-grid-4">
       <a href="#/live" class="v2-glass v2-feature-card"><div class="v2-feature-header"><div class="v2-feature-icon">${icon('radio')}</div><div><span class="v2-eyebrow">LIVE MATCHES</span><p>Aktuelle Begegnungen</p></div>${icon('chevron','v2-go')}</div>
       ${highlighted?compactMatch(highlighted):`<div class="v2-mini-empty">${icon('clock')}<strong>Es geht bald los</strong><span>Die Begegnungen erscheinen nach der Gruppenauslosung.</span></div>`}
       </a>
-      <a href="#/live" class="v2-glass v2-feature-card"><div class="v2-feature-header"><div class="v2-feature-icon">${icon('users')}</div><div><span class="v2-eyebrow">GRUPPEN</span><p>8 Gruppen · je 3–4 Teams</p></div>${icon('chevron','v2-go')}</div>
+      <a href="#/live" class="v2-glass v2-feature-card"><div class="v2-feature-header"><div class="v2-feature-icon">${icon('users')}</div><div><span class="v2-eyebrow">GRUPPEN</span><p>${plannedGroupCount()} Gruppen · jeder gegen jeden</p></div>${icon('chevron','v2-go')}</div>
       <div class="v2-compact-ranking"><div class="v2-th"><span>GRUPPE A</span><span>S</span></div>
       ${groupA.length?groupA.slice(0,4).map((t,i)=>`<div class="v2-rank-row"><span><b>${i+1}</b> ${teamMarkup(t.id)}</span><b>${t.w}</b></div>`).join(''):`<div class="v2-mini-empty inline">${icon('shuffle')}<span>Gruppenauslosung steht noch aus.</span></div>`}</div></a>
       <a href="#/playoffs" class="v2-glass v2-feature-card"><div class="v2-feature-header"><div class="v2-feature-icon">${icon('trophy')}</div><div><span class="v2-eyebrow">PLAYOFFS</span><p>Der Weg zum Titel</p></div>${icon('chevron','v2-go')}</div>
       <div class="v2-mini-bracket"><div class="v2-bracket-line"><span>${state.phase==='playoffs'?teamMarkup(state.playoffMatches[0]?.teamAId):'Gruppensieger A'}</span><span>${state.phase==='playoffs'?teamMarkup(state.playoffMatches[0]?.teamBId):'Gruppenzweiter B'}</span></div><div class="v2-bracket-join"></div><div class="v2-bracket-winner">${final?.winnerId?teamMarkup(final.winnerId):'Finale offen'}</div></div>
       </a>
       <a href="#/schedule" class="v2-glass v2-feature-card"><div class="v2-feature-header"><div class="v2-feature-icon">${icon('calendar')}</div><div><span class="v2-eyebrow">TURNIERPLAN</span><p>Alle Runden im Überblick</p></div>${icon('chevron','v2-go')}</div>
-      <div class="v2-timeline-list"><div><b>01</b><span>Anmeldung</span><small>${state.phase==='registration'?'Aktuell':'Erledigt'}</small></div><div><b>02</b><span>Gruppenphase</span><small>${state.phase==='groups'?'Aktuell':'8 Gruppen'}</small></div><div><b>03</b><span>Playoffs</span><small>${state.phase==='playoffs'?'Aktuell':'16 Teams'}</small></div><div><b>04</b><span>Finale</span><small>1 Champion</small></div></div>
+      <div class="v2-timeline-list"><div><b>01</b><span>Anmeldung</span><small>${state.phase==='registration'?'Aktuell':'Erledigt'}</small></div><div><b>02</b><span>Gruppenphase</span><small>${state.phase==='groups'?'Aktuell':plannedGroupCount()+' Gruppen'}</small></div><div><b>03</b><span>Playoffs</span><small>${state.phase==='playoffs'?'Aktuell':playoffSize()+' Teams'}</small></div><div><b>04</b><span>Finale</span><small>1 Champion</small></div></div>
       </a>
     </div><div class="v2-motto"><span>${icon('trophy')} LEGENDÄRE STIMMUNG</span><span>${icon('users')} STARKE TEAMS</span><span>${icon('spark')} GUTE DRINKS</span><span>${icon('crown')} UNVERGESSLICHE NÄCHTE</span></div></section>
     <section class="v2-after container"><div><div class="kicker">EIN ABEND · EIN TITEL</div><h2>Bereit für den Cup?</h2><p>Teams anmelden, Begegnungen live verfolgen und das Finale gemeinsam feiern.</p></div><a class="btn btn-gold" href="#/registration">Jetzt mitmachen ${icon('arrow')}</a></section>`;
@@ -568,7 +586,7 @@
           <div class="privacy-note">Eure Anmeldung wird zentral im Cimbria-Turniersystem gespeichert.</div>
         </form>
       </section><aside class="v2-glass v2-info-card"><div class="v2-section-head">${icon('trophy')}<h2>Wichtigste Infos</h2></div>
-        ${[["users","2–4 Spieler","Zwei aktive Spieler pro Partie. Zusätzliche Mitglieder können wechseln."],["grid",`Maximal ${MAX_TEAMS()} Teams`,"Die Anzahl legt die Turnierleitung fest."],["trophy","Gruppen + Playoffs","8 Gruppen, anschließend K.-o.-Runde mit 16 Teams."],["radio","Ergebnisse live verfolgen","Alle bestätigten Siege sind für alle Besucher live sichtbar."]].map(([ico,t,d])=>`<div class="v2-info-item"><div class="v2-info-icon">${icon(ico)}</div><div><strong>${t}</strong><p>${d}</p></div></div>`).join('')}
+        ${[["users","2–4 Spieler","Zwei aktive Spieler pro Partie. Zusätzliche Mitglieder können wechseln."],["grid",`Maximal ${MAX_TEAMS()} Teams`,"Die Anzahl legt die Turnierleitung fest."],["trophy","Gruppen + Playoffs","${plannedGroupCount()} Gruppen, anschließend K.-o.-Runde mit ${playoffSize()} Teams."],["radio","Ergebnisse live verfolgen","Alle bestätigten Siege sind für alle Besucher live sichtbar."]].map(([ico,t,d])=>`<div class="v2-info-item"><div class="v2-info-icon">${icon(ico)}</div><div><strong>${t}</strong><p>${d}</p></div></div>`).join('')}
         <div class="v2-seat-card"><div class="wide-line"><span>Aktueller Anmeldestand</span><strong>${state.teams.length} / ${MAX_TEAMS()}</strong></div><div class="progress-track"><div class="progress-bar" style="width:${Math.min(100,state.teams.length/MAX_TEAMS()*100)}%"></div></div><small>${spots} Plätze verfügbar · ${open?'Anmeldung geöffnet':'Anmeldung geschlossen'}</small></div>
         <a href="#/info" class="v2-info-link">Turnierregeln & häufige Fragen ${icon('arrow')}</a>
       </aside></div></div>`;
@@ -576,7 +594,7 @@
   function renderStandings(g){
     const {ranking,unresolved,pending,complete}=computeRanking(g);
     if(!ranking.length)return `<div class="view-empty">${icon('grid')}<strong>Noch keine Auslosung</strong><p>Die Gruppentabellen werden nach dem Start der Gruppenphase erstellt.</p></div>`;
-    return `<div class="group-tabs">${GROUPS.map(group=>`<button class="group-tab ${ui.liveGroup===group?'active':''}" data-action="group" data-group="${group}" aria-label="Gruppe ${group} anzeigen">${group}</button>`).join('')}</div>
+    return `<div class="group-tabs">${activeGroupNames().map(group=>`<button class="group-tab ${ui.liveGroup===group?'active':''}" data-action="group" data-group="${group}" aria-label="Gruppe ${group} anzeigen">${group}</button>`).join('')}</div>
       <table class="standings"><thead><tr><th>Platz / Team</th><th>Sp.</th><th>S</th><th>N</th></tr></thead><tbody>${ranking.map((t,i)=>`<tr class="${i<2?'qualified':''}"><td><span class="place">${i+1}</span>${teamMarkup(t.id)}</td><td>${t.w+t.l}</td><td><strong>${t.w}</strong></td><td>${t.l}</td></tr>`).join('')}</tbody></table>
       <p class="muted text-xs" style="line-height:1.7;margin:14px 0 0">${complete?(unresolved.length?'Entscheidungsspiele nötig – Platzierungen noch nicht endgültig.':pending.length?'Entscheidungsspiele laufen noch.':'Alle regulären Gruppenspiele beendet.'):'Die Tabelle wird nach jedem Spiel automatisch aktualisiert.'} ${complete?'':'Platz 1 & 2 sind bis zum Gruppenende vorläufig.'}</p>`;
   }
@@ -632,10 +650,10 @@
     return `${pageBanner('GUT ZU WISSEN','Infos & <em>FAQ</em>','Alles Wichtige zur Teilnahme und zum Turnierformat.')}
       <div class="container content-pad v2-info-page"><div class="v2-glass v2-panel"><div class="v2-section-head">${icon('info')}<h2>Das Turnier</h2></div>
         <div class="v2-info-item"><div class="v2-info-icon">${icon('users')}</div><div><strong>${MIN_TEAMS()}–${MAX_TEAMS()} Teams · 2–4 Personen</strong><p>Pro Begegnung stehen zwei Spieler am Tisch. Teammitglieder können zwischen Partien wechseln.</p></div></div>
-        <div class="v2-info-item"><div class="v2-info-icon">${icon('grid')}</div><div><strong>Acht Gruppen</strong><p>In jeder Gruppe spielt jeder gegen jeden. Die besten zwei Teams qualifizieren sich.</p></div></div>
-        <div class="v2-info-item"><div class="v2-info-icon">${icon('trophy')}</div><div><strong>K.-o.-Phase mit 16 Teams</strong><p>Achtelfinale, Viertelfinale, Halbfinale und Finale. Der Sieger zieht jeweils weiter.</p></div></div>
+        <div class="v2-info-item"><div class="v2-info-icon">${icon('grid')}</div><div><strong>${plannedGroupCount()} Gruppen</strong><p>In jeder Gruppe spielt jeder gegen jeden. Die besten zwei Teams qualifizieren sich.</p></div></div>
+        <div class="v2-info-item"><div class="v2-info-icon">${icon('trophy')}</div><div><strong>K.-o.-Phase mit ${playoffSize()} Teams</strong><p>${playoffSize()===8?'Viertelfinale, Halbfinale und Finale':'Achtelfinale, Viertelfinale, Halbfinale und Finale'}. Der Sieger zieht jeweils weiter.</p></div></div>
       </div><div class="v2-glass v2-panel"><div class="v2-section-head">${icon('spark')}<h2>Häufige Fragen</h2></div>
-        <details><summary>Wie werden Ergebnisse gewertet?</summary><p>Nur Sieg oder Niederlage. Becherstände werden nicht erfasst.</p></details>
+        <details><summary>Wie werden Ergebnisse gewertet?</summary><p>Nur Sieg oder Niederlage entscheidet über den Gewinner. Der Live-Becherstand ist eine zusätzliche Anzeige.</p></details>
         <details><summary>Was passiert bei einem Gleichstand?</summary><p>Zuerst zählen die Siege, bei zwei gleich platzierten Teams der direkte Vergleich. Ein nicht auflösbarer Dreiergleichstand wird durch Entscheidungsspiele aufgelöst.</p></details>
         <details><summary>Wer trägt die Ergebnisse ein?</summary><p>Die Turnierleitung bestätigt nach jedem Spiel den Sieger. Der Admin-Bereich erhält vor dem öffentlichen Start eine sichere Anmeldung.</p></details>
         <details><summary>Wie funktionieren die Spieltische?</summary><p>Die Anzahl der Tische wird im Admin-Bereich festgelegt. Der Hybridmodus macht Vorschläge, die Leitung bestätigt oder verändert die Zuweisung.</p></details>
@@ -644,21 +662,23 @@
   }
   const ROUND_LABELS=['Achtelfinale','Viertelfinale','Halbfinale','Finale'];
   const ROUND_SLOTS=[['A1','B2'],['C1','D2'],['E1','F2'],['G1','H2'],['B1','A2'],['D1','C2'],['F1','E2'],['H1','G2']];
+  const ROUND_SLOTS_8=[['A1','B2'],['C1','D2'],['B1','A2'],['D1','C2']];
   function bracketTeam(id,placeholder,winnerId){
     return `<div class="bracket-team ${id&&winnerId===id?'winner':''} ${id?'':'empty'}"><span>${id?teamMarkup(id):escape(placeholder)}</span>${id&&winnerId===id?icon('check'):''}</div>`;
   }
   function renderPlayoffs(){
     const matchCount=state.playoffMatches.filter(m=>m.status==='done').length;
     const champion=state.playoffMatches.find(m=>m.round===3)?.winnerId;
-    return `${pageBanner('DER WEG ZUM HAUSPOKAL','Die Playoffs','16 Teams. Vier K.-o.-Runden. Am Ende bleibt genau ein Champion.','16')}
-      <div class="container content-pad"><div class="tool-row"><div class="tool-left"><span class="badge gold">${icon('trophy')} SINGLE ELIMINATION</span><span class="badge">${matchCount} / 15 entschieden</span></div><span class="demo-label">${state.phase==='playoffs'?'PLAYOFFS FREIGEGEBEN':'VORSCHAU – PLÄTZE NOCH OFFEN'}</span></div>
+    const size=playoffSize(),firstRound=size===8?1:0;
+    return `${pageBanner('DER WEG ZUM HAUSPOKAL','Die Playoffs',size+' Teams. '+(size===8?'Drei':'Vier')+' K.-o.-Runden. Am Ende bleibt genau ein Champion.',String(size))}
+      <div class="container content-pad"><div class="tool-row"><div class="tool-left"><span class="badge gold">${icon('trophy')} SINGLE ELIMINATION</span><span class="badge">${matchCount} / ${size-1} entschieden</span></div><span class="demo-label">${state.phase==='playoffs'?'PLAYOFFS FREIGEGEBEN':'VORSCHAU – PLÄTZE NOCH OFFEN'}</span></div>
         <div class="notice" style="margin-bottom:24px">${icon('info')}<div>Gruppensieger spielen gegen Zweitplatzierte einer anderen Gruppe. Beide Teams derselben Gruppe befinden sich in unterschiedlichen Hälften des Turnierbaums. Der Sieger jeder Partie rückt automatisch eine Runde weiter.</div></div>
-        <div class="bracket-scroll"><div class="bracket">${ROUND_LABELS.map((name,r)=>{
+        <div class="bracket-scroll"><div class="bracket ${size===8?'bracket-eight':'bracket-sixteen'}">${ROUND_LABELS.map((name,r)=>({name,r})).filter(({r})=>r>=firstRound).map(({name,r})=>{
           const matches=state.playoffMatches.filter(m=>m.round===r).sort((a,b)=>a.position-b.position);
           const length=8/2**r;
           const matchCells=Array.from({length},(_,pos)=>{
             const m=matches[pos];
-            const placeholders=r===0?ROUND_SLOTS[pos].map(x=>`${x.charAt(1)}. Gruppe ${x.charAt(0)}`):['Sieger der Vorrunde','Sieger der Vorrunde'];
+            const placeholders=r===firstRound?(size===8?ROUND_SLOTS_8:ROUND_SLOTS)[pos].map(x=>`${x.charAt(1)}. Gruppe ${x.charAt(0)}`):['Sieger der Vorrunde','Sieger der Vorrunde'];
             return `<div class="bracket-match ${r===3?'championship':''}" style="grid-row:${2+pos*(2**(r+1))} / span ${2**(r+1)};align-self:center">${bracketTeam(m?.teamAId,placeholders[0],m?.winnerId)}${bracketTeam(m?.teamBId,placeholders[1],m?.winnerId)}<div class="bracket-small">${m?.status==='done'?'Abgeschlossen':m?.status==='live'?'LIVE · '+escape(state.tables.find(t=>t.id===m.tableId)?.name||''):m?.status==='ready'?'Bereit':`Spiel ${pos+1}`}</div></div>`;
           }).join('');
           return `<div class="bracket-col r${r+1}"><div class="bracket-header"><strong>${name}</strong><span>${16/2**r} Teams · ${length} ${length===1?'Spiel':'Spiele'}</span></div>${matchCells}</div>`;
@@ -700,7 +720,7 @@
   }
   function renderAdminResults(){
     const done=allMatches().filter(m=>m.status==='done').sort((a,b)=>(b.completedAt||0)-(a.completedAt||0));
-    const ties=GROUPS.flatMap(g=>computeRanking(g).unresolved.map(teamIds=>({group:g,teamIds})));
+    const ties=state.groups.flatMap(g=>computeRanking(g.name).unresolved.map(teamIds=>({group:g.name,teamIds})));
     return `<div class="card-title" style="margin-bottom:5px">Ergebnisse & Entscheidungsrunden</div><p class="muted text-sm" style="line-height:1.7;margin-bottom:22px">Die Siegerauswahl erfolgt an den Spieltischen. Bereits abgeschlossene Partien können – soweit der Turnierverlauf dies noch zulässt – korrigiert werden.</p>
       ${ties.length?`<div class="notice danger-note" style="margin-bottom:20px">${icon('alert')}<div><strong>Offene Gleichstände:</strong> ${ties.map(t=>`Gruppe ${t.group}`).join(', ')}. Eine Entscheidungsrunde ist erforderlich.</div></div>${ties.map(t=>`<div class="admin-queue-row"><span>Gruppe ${t.group}: ${t.teamIds.map(teamLabel).map(escape).join(', ')}</span><button class="btn btn-outline btn-sm" data-action="tiebreak" data-group="${t.group}">Entscheidungsspiele</button></div>`).join('')}`:''}
       <div class="admin-queue" style="margin-top:20px">${done.length?done.slice(0,32).map(m=>{
@@ -726,12 +746,12 @@
   }
   function renderAdminSettings(){
     const remain=state.matches.filter(m=>m.type==='group'&&m.status!=='done').length;
-    const matchesReady=state.phase==='groups' && remain===0 && !tiebreaksUnfinished() && !GROUPS.some(g=>computeRanking(g).unresolved.length);
+    const matchesReady=state.phase==='groups' && remain===0 && !tiebreaksUnfinished() && !state.groups.some(g=>computeRanking(g.name).unresolved.length);
     const activeMatchCount=allMatches().filter(m=>m.status==='ready'||m.status==='live').length;
     return `<div class="card-title">Turniersteuerung</div><p class="muted text-sm" style="margin:8px 0 21px;line-height:1.7">Hier startet die Turnierleitung die nächste Phase. Bestehende Ergebnisse werden vor versehentlichem Überschreiben geschützt.</p>
-      <div class="subtle-frame"><div class="panel-caption">SCHRITT 1 · GRUPPENPHASE</div><h3 class="serif" style="font-size:22px;margin:8px 0">Gruppen auslosen</h3><p class="muted text-sm" style="line-height:1.7;margin:0 0 16px">Die angemeldeten Teams werden automatisch auf acht Gruppen verteilt. Für jede Gruppe wird jeder gegen jeden angesetzt.</p><button class="btn btn-gold" data-action="start-groups" ${state.phase!=='registration'||state.teams.length<24?'disabled':''}>${icon('shuffle')} Gruppenphase starten</button></div>
+      <div class="subtle-frame"><div class="panel-caption">SCHRITT 1 · GRUPPENPHASE</div><h3 class="serif" style="font-size:22px;margin:8px 0">Gruppen auslosen</h3><p class="muted text-sm" style="line-height:1.7;margin:0 0 16px">Ab 12 Teams starten wir mit vier Gruppen und einem 8er-Playoff-Baum. Ab 16 Teams werden acht Gruppen und 16 Playoff-Plätze verwendet. In jeder Gruppe spielt jeder gegen jeden.</p><button class="btn btn-gold" data-action="start-groups" ${state.phase!=='registration'||state.teams.length<MIN_TEAMS()||state.teams.length>MAX_TEAMS()?'disabled':''}>${icon('shuffle')} Gruppenphase starten</button></div>
       <div class="subtle-frame" style="margin-top:14px"><div class="panel-caption">SCHRITT 2 · ECHTE ERGEBNISSE</div><h3 class="serif" style="font-size:22px;margin:8px 0">Gruppenspiele abschließen</h3><p class="muted text-sm" style="line-height:1.7;margin:0">Noch offen: <strong>${remain}</strong>. Bitte Sieger an den jeweiligen Tischen bestätigen.</p></div>
-      <div class="subtle-frame" style="margin-top:14px"><div class="panel-caption">SCHRITT 3 · PLAYOFFS</div><h3 class="serif" style="font-size:22px;margin:8px 0">Playoffs freigeben</h3><p class="muted text-sm" style="line-height:1.7;margin:0 0 16px">Die acht Gruppensieger und acht Gruppenzweiten werden automatisch für das Achtelfinale gesetzt. Bei ungelösten Gleichständen ist dieser Schritt gesperrt.</p><button class="btn btn-gold" data-action="start-playoffs" ${matchesReady?'':'disabled'}>${icon('trophy')} Playoffs starten</button></div>
+      <div class="subtle-frame" style="margin-top:14px"><div class="panel-caption">SCHRITT 3 · PLAYOFFS</div><h3 class="serif" style="font-size:22px;margin:8px 0">Playoffs freigeben</h3><p class="muted text-sm" style="line-height:1.7;margin:0 0 16px">Die jeweils zwei besten Teams jeder Gruppe qualifizieren sich. Je nach Teilnehmerzahl beginnen die Playoffs im Viertel- oder Achtelfinale. Bei ungeklärten Gleichständen bleibt der Start gesperrt.</p><button class="btn btn-gold" data-action="start-playoffs" ${matchesReady?'':'disabled'}>${icon('trophy')} Playoffs starten</button></div>
       <div class="admin-separator"></div>
       <div class="subtle-frame cim-tv-control">
         <div class="wide-line cim-tv-top">
@@ -775,8 +795,8 @@
         </div>
       </div>
 <form id="team-limit" class="subtle-frame"><h3 class="serif" style="font-size:22px">Maximale Teamanzahl</h3>
-<p class="muted text-sm">16 bis 512 Teams, vor der Auslosung änderbar. Größere Turniere führen zu mehr Gruppenspielen.</p>
-<div class="field"><input type="number" name="limit" min="16" max="512" value="${MAX_TEAMS()}" required></div>
+<p class="muted text-sm">12 bis 512 Teams, vor der Auslosung änderbar. Größere Turniere führen zu mehr Gruppenspielen.</p>
+<div class="field"><input type="number" name="limit" min="12" max="512" value="${MAX_TEAMS()}" required></div>
 <button class="btn btn-outline" type="submit" ${state.phase!=='registration'||ui.saving?'disabled':''}>Teamlimit speichern</button>
 </form><div class="subtle-frame" style="margin-top:14px"><h3 class="serif" style="font-size:22px;margin:0 0 8px">Öffentliche Teamanmeldung</h3>
        <p class="muted text-sm">Anmeldungen sind ${state.registrationOpen?'geöffnet':'geschlossen'}. Gäste benötigen kein Benutzerkonto.</p>

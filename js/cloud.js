@@ -38,7 +38,7 @@
   const empty = () => ({
     version: 3, phase: "registration", registrationOpen: false,
     teams: [], groups: [], matches: [], playoffMatches: [], tables: [], log: [],
-    revision: 0, isPublished: false, maxTeams:32, minTeams:16,
+    revision: 0, isPublished: false, maxTeams:32, minTeams:12, groupCount:8, playoffTeams:16,
     tvAutoIntros:true, tvAutoWins:true, tvRotateBracket:true, tvMainMatchId:null,
   });
   const timestamp = (value) => value ? Date.parse(value) : null;
@@ -62,10 +62,11 @@
     return {
       version: 3, phase: t.phase, registrationOpen: t.registration_open,
       isPublished: t.is_published, revision: t.revision, maxTeams:t.max_teams, minTeams:t.min_teams,
+      groupCount:t.group_count,playoffTeams:t.playoff_teams,
       tvAutoIntros:t.tv_auto_intros, tvAutoWins:t.tv_auto_wins,
       tvRotateBracket:t.tv_rotate_bracket, tvMainMatchId:t.tv_main_match_id,
       teams: registeredTeams,
-      groups: t.phase === "registration" ? [] : groups.map(g => ({
+      groups: t.phase === "registration" ? [] : groups.slice(0,t.group_count).map(g => ({
         name: g.code, id: groupIds[g.code],
         teamIds: members.filter(m => m.group_id === g.id).map(m => m.team_id),
       })),
@@ -100,7 +101,7 @@
   async function reload() {
     const key = ++requestCounter;
     const t = assert(await db("tournaments")
-      .select("id,name,slug,phase,registration_open,is_published,revision,max_teams,min_teams,tv_auto_intros,tv_auto_wins,tv_rotate_bracket,tv_main_match_id")
+      .select("id,name,slug,phase,registration_open,is_published,revision,max_teams,min_teams,group_count,playoff_teams,tv_auto_intros,tv_auto_wins,tv_rotate_bracket,tv_main_match_id")
       .eq("slug",SLUG).maybeSingle());
     if (!t) {
       const blank = empty();

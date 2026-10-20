@@ -38,7 +38,7 @@ Es gibt zusätzlich manuelle Regie-Buttons für Intro, Siegeranimation, Turnierb
 
 ## Weitere Funktionen
 
-Öffentliche Gastanmeldungen ohne Konto (2–4 Spieler), konfigurierbare Teamobergrenze, acht Gruppen, Spiel- und Tischverwaltung, 16er-K.-o.-Baum, Live-Becherzähler und verschiedene Admin-Rollen. Alle echten Daten werden zentral in Supabase PostgreSQL gespeichert.
+Öffentliche Gastanmeldungen ohne Konto (2–4 Spieler), konfigurierbare Teamobergrenze, vier oder acht Gruppen, Spiel- und Tischverwaltung, 8er-/16er-K.-o.-Baum, Live-Becherzähler und verschiedene Admin-Rollen. Alle echten Daten werden zentral in Supabase PostgreSQL gespeichert.
 
 ## Projektstruktur
 
@@ -56,3 +56,6 @@ Es gibt zusätzlich manuelle Regie-Buttons für Intro, Siegeranimation, Turnierb
 Der TV-Modus hat nur **Leserechte** und zeigt keine privaten Spielernamen, sondern Teamnamen, Embleme und Turnierdaten. Admin-Regieaktionen sind über Supabase-RLS und serverseitige Berechtigungsprüfung abgesichert. Weder Passwörter noch der Supabase-Service-Role-Schlüssel gehören in dieses öffentliche Repository.
 
 Automatische Backend-Ereignisse sowie der Quellcode wurden geprüft. Der vollständige visuelle Test mit mehreren echten Endgeräten steht vor dem Event noch aus. Die Gastanmeldung wird nicht automatisch geöffnet. Auf CAPTCHA, IP-Rate-Limit und Gast-Bearbeitungslinks wurde wie gewünscht verzichtet.
+## Start ab 12 Mannschaften
+
+Bei 12–15 Teams spielt der Cup in **vier Gruppen (A–D)** und danach im **8er-Viertelfinale**. Ab 16 Teams werden **acht Gruppen (A–H)** und ein **16er-Achtelfinale** ausgelost. Jeweils die ersten zwei Mannschaften jeder Gruppe qualifizieren sich. Die maximale Teilnehmerzahl ist im Admin-Bereich auf 12–512 einstellbar. Die Auslosung und Schließung der Anmeldung erfolgen erst nach bewusster Bestätigung des Admins.

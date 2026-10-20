@@ -69,3 +69,10 @@ button[disabled] { cursor: not-allowed; opacity: .6; }
 @media(max-width:950px){.cim-icon-grid{grid-template-columns:repeat(4,minmax(0,1fr))}}
 @media(max-width:560px){.cim-icon-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}.cim-picker-img{width:50px;height:56px}.cim-icon-option{min-height:82px}.cim-icon-option span{font-size:9px}.cim-tv-top{align-items:flex-start;flex-direction:column}.cim-tv-actions .btn{flex:1 1 130px}.team-icon-inline{width:20px;height:24px}}
 @media(prefers-reduced-motion:reduce){.cim-icon-option{transition:none}.cim-icon-option:hover{transform:none}}
+
+/* 12–15 entrants: four groups lead to an eight-team quarterfinal bracket. */
+.bracket.bracket-eight{grid-template-columns:repeat(3,minmax(205px,1fr));min-width:720px}
+.bracket-eight .bracket-col.r2{padding-top:0;gap:13px}
+.bracket-eight .bracket-col.r3{padding-top:90px;gap:160px}
+.bracket-eight .bracket-col.r4{padding-top:200px}
+@media(max-width:760px){.bracket.bracket-eight{min-width:680px;gap:14px}}

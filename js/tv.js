@@ -148,7 +148,10 @@ function renderAll(){
  "STARKE TEAMS · LEGENDÄRE SPIELE · JEDER BECHER ZÄHLT");
 }
 function bracketHtml(){
- var rounds=[0,1,2,3],playoffs=state.matches.filter(function(m){return m.stage==="playoff";});
+ var playoffs=state.matches.filter(function(m){return m.stage==="playoff";});
+ var eightTeams=playoffs.length>0&&!playoffs.some(function(m){return m.round_no===0;});
+ var rounds=eightTeams?[1,2,3]:[0,1,2,3];
+ $("scene-bracket-grid").classList.toggle("is-eight",eightTeams);
  return rounds.map(function(r){
   var ms=playoffs.filter(function(m){return m.round_no===r;}).sort(function(a,b){return a.bracket_position-b.bracket_position;});
   return '<div class="bracket-round"><div class="bracket-round-title">'+ROUND[r]+'</div>'+

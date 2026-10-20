@@ -1,7 +1,7 @@
 name: Validate Cimbria Website
 on:
   push:
-    branches: [main, feat/supabase-auth-live, feat/admin-password-login, feat/cup-score-admin-team-limit, feat/v5-cinematic-tv-emblems]
+    branches: [main, feat/supabase-auth-live, feat/admin-password-login, feat/cup-score-admin-team-limit, feat/v5-cinematic-tv-emblems, feat/start-from-12-teams]
   pull_request:
     branches: [main]
 permissions:
@@ -45,4 +45,20 @@ jobs:
           const missing = [...new Set(refs)].filter(id => !html.includes('id="' + id + '"'));
           assert.deepEqual(missing, [], 'Missing DOM nodes: ' + missing.join(','));
           console.log('TV DOM references: valid');
+          NODE
+
+      - name: Check 12-team group and playoff support
+        run: |
+          node - <<'NODE'
+          const fs = require('fs');
+          const assert = require('node:assert/strict');
+          const app = fs.readFileSync('js/app.js','utf8');
+          const cloud = fs.readFileSync('js/cloud.js','utf8');
+          assert(app.includes('state.teams.length<MIN_TEAMS()'), 'Start button must use minimum team count');
+          assert(app.includes('state.teams.length < 16 ? 4 : 8'), 'Four-group format at 12–15 teams');
+          assert(app.includes('round:small?1:0'), 'Eight-player bracket must start at quarterfinals');
+          assert(app.includes('const ROUND_SLOTS_8='), 'Missing compact bracket labels');
+          assert(cloud.includes('groups.slice(0,t.group_count)'), 'Supabase adapter must omit inactive groups');
+          assert(cloud.includes('minTeams:12'), 'Fallback minimum must be 12');
+          console.log('12-team format checks passed.');
           NODE
