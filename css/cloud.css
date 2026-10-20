@@ -12,3 +12,14 @@
 .v2-admin-notice { display:flex; align-items:center; flex-wrap:wrap; gap:10px; }
 .v2-admin-notice span { flex: 1 1 230px; }
 button[disabled] { cursor: not-allowed; opacity: .6; }
+
+/* V4 – live cup scoreboard and admin configuration */
+.cup-score-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:16px 0}
+.cup-team{display:flex;flex-direction:column;align-items:center;gap:8px;padding:14px 9px;background:rgba(25,9,25,.75);border:1px solid rgba(219,172,100,.32);border-radius:13px;text-align:center;min-width:0}
+.cup-team strong{overflow-wrap:anywhere;font-size:12px}
+.cup-remaining{font-family:Georgia,serif;font-weight:700;font-size:42px;line-height:1;color:#e9c177}
+.cup-team small{font-size:11px;color:#cbbecb}
+.cup-buttons{display:flex;gap:9px}
+.cup-buttons .btn{min-width:45px;min-height:36px;font-size:20px}
+#team-limit input,#member-add input,#member-add select,#admin-signup input{box-sizing:border-box;display:block;width:100%;margin-top:7px;padding:12px 15px;font:inherit;color:#f7edf3;background:rgba(30,12,34,.8);border:1px solid rgba(199,151,94,.35);border-radius:10px}
+#admin-signup{margin-top:17px}

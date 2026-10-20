@@ -37,7 +37,7 @@
   const empty = () => ({
     version: 3, phase: "registration", registrationOpen: false,
     teams: [], groups: [], matches: [], playoffMatches: [], tables: [], log: [],
-    revision: 0, isPublished: false,
+    revision: 0, isPublished: false, maxTeams:32, minTeams:16,
   });
   const timestamp = (value) => value ? Date.parse(value) : null;
   const normalize = (t, teams, players, groups, members, tables, matches, logs) => {
@@ -54,12 +54,12 @@
       round: m.round_no, position: m.bracket_position, order: m.order_index,
       teamAId: m.team_a_id, teamBId: m.team_b_id,
       winnerId: m.winner_team_id, status: m.status,
-      tableId: m.table_id, playedTableId: m.played_table_id,
+      tableId: m.table_id, playedTableId: m.played_table_id,cupsA:m.cups_a,cupsB:m.cups_b,
       startedAt: timestamp(m.started_at), completedAt: timestamp(m.completed_at),
     }));
     return {
       version: 3, phase: t.phase, registrationOpen: t.registration_open,
-      isPublished: t.is_published, revision: t.revision,
+      isPublished: t.is_published, revision: t.revision, maxTeams:t.max_teams, minTeams:t.min_teams,
       teams: registeredTeams,
       groups: t.phase === "registration" ? [] : groups.map(g => ({
         name: g.code, id: groupIds[g.code],
@@ -94,7 +94,7 @@
   async function reload() {
     const key = ++requestCounter;
     const t = assert(await db("tournaments")
-      .select("id,name,slug,phase,registration_open,is_published,revision")
+      .select("id,name,slug,phase,registration_open,is_published,revision,max_teams,min_teams")
       .eq("slug",SLUG).maybeSingle());
     if (!t) {
       const blank = empty();
@@ -110,7 +110,7 @@
       db("groups").select("id,code,sort_order").eq("tournament_id",t.id).order("sort_order"),
       db("group_members").select("group_id,team_id").eq("tournament_id",t.id),
       db("game_tables").select("id,name,sort_order,active").eq("tournament_id",t.id).order("sort_order"),
-      db("matches").select("id,group_id,stage,round_no,bracket_position,order_index,team_a_id,team_b_id,winner_team_id,status,table_id,played_table_id,started_at,completed_at")
+      db("matches").select("id,group_id,stage,round_no,bracket_position,order_index,team_a_id,team_b_id,winner_team_id,status,table_id,played_table_id,started_at,completed_at,cups_a,cups_b")
         .eq("tournament_id",t.id).order("order_index"),
     ]);
     const teams = assert(teamR), groups = assert(groupR), members = assert(memberR);
@@ -234,6 +234,15 @@
     await reload();
     return true;
   }
+  async function setTeamLimit(max){assert(await client.rpc("cimbria_set_max_teams",{p_max:max}));return reload();}
+  async function updateCups(id,side,delta){assert(await client.rpc("cimbria_update_cups",{p_match:id,p_team:side,p_delta:delta}));return reload();}
+  async function getMembers(){return assert(await client.rpc("cimbria_admin_members",{p_action:"list"}));}
+  async function changeMember(action,email,role="supervisor"){assert(await client.rpc("cimbria_admin_members",{p_action:action,p_email:email,p_role:role}));return getMembers();}
+  async function registerInvitedAdmin(email,password){
+    const r=await client.auth.signUp({email:email.trim(),password,options:{emailRedirectTo:window.location.origin+window.location.pathname}});
+    if(r.error)throw r.error;
+    return true;
+  }
   async function logout() {
     const r = await client.auth.signOut();
     if (r.error) throw r.error;
@@ -242,7 +251,7 @@
     return await reload();
   }
   window.CimbriaCloud = {
-    initialize, reload, save, guestRegister, signInAdmin, logout,
+    initialize, reload, save, guestRegister, signInAdmin, logout,setTeamLimit,updateCups,getMembers,changeMember,registerInvitedAdmin,
     get isAdmin() { return authorized; },
     get email() { return authEmail; },
     get isBusy() { return busy; },

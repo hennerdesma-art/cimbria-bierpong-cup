@@ -38,3 +38,9 @@
 5. Für ein echtes Turnier Testdaten vorher unter Admin-Kontrolle entfernen; keine produktiven Ergebnisse simulieren.
 
 **Hinweis:** Die Datenbank- und Quellcodeintegration ist eingerichtet; ein echter Login-Link muss noch durch den berechtigten Postfachinhaber bestätigt und der komplette UI-Test mit zwei Geräten durchgeführt werden.
+
+
+## Erweiterungen 2026-10-20
+- `max_teams`: 16–512, über Admin-Formular einstellbar vor der Auslosung; bei hoher Anzahl steigt die Spieldauer stark.
+- `cimbria_admin_members`: E-Mail-basierte Freigabeliste, Rollen `admin` und `supervisor`. Neu eingeladene Mitglieder registrieren sich mit eigenem Passwort und E-Mail-Bestätigung.
+- `cups_a`/`cups_b`: Becherstand 0–10, nur bei laufenden Spielen administrativ änderbar; Sieger weiterhin manuell.
