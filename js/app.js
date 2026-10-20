@@ -753,7 +753,7 @@ ${ui.signupOpen?`<form id="admin-signup" class="subtle-frame">
       <section class="v2-glass v2-panel v2-admin-next"><div class="v2-panel-title"><div>${icon('clock')}<span>NÄCHSTES SPIEL</span></div></div>
         ${suggestion?`<div class="v2-admin-proposal"><span class="v2-eyebrow">AUTOMATISCHER VORSCHLAG</span><h3>${teamMarkup(suggestion.teamAId)}</h3><span class="v2-vs">VS</span><h3>${teamMarkup(suggestion.teamBId)}</h3><small>${suggestion.type==='group'?`Gruppe ${suggestion.group}`:suggestion.type==='tiebreak'?'Entscheidungsspiel':ROUND_LABELS[suggestion.round]}</small></div>`:`<div class="v2-mini-empty"><strong>Noch keine Begegnungen</strong><span>Im Turnierbereich zuerst die Auslosung starten.</span></div>`}
         <button class="btn btn-gold btn-block" data-action="admin-tab" data-tab="tables">Tischzuweisung öffnen ${icon('arrow')}</button></section></div>
-        <div class="v2-admin-workspace"><section class="v2-glass v2-panel"><div class="v2-panel-title"><div>${icon('settings')}<span>TURNIERVERWALTUNG</span></div><span>Hybridmodus</span></div><div class="tab-row">${[['tables','Spieltische'],['results','Ergebnisse'],['teams','Teams'],['settings','Turnier'],['members','Mitglieder']].map(([tab,label])=>`<button class="tab-btn ${ui.adminTab===tab?'active':''}" data-action="admin-tab" data-tab="${tab}">${label}</button>`).join('')}</div><div class="v2-admin-tab-content">${ui.adminTab==='tables'?renderAdminTables():ui.adminTab==='results'?renderAdminResults():ui.adminTab==='teams'?renderAdminTeams():ui.adminTab==='members'?renderAdminMembers():renderAdminSettings()}</div></section>
+        <div class="v2-admin-workspace"><section class="v2-glass v2-panel"><div class="v2-panel-title"><div>${icon('settings')}<span>TURNIERVERWALTUNG</span></div><span>Hybridmodus</span></div><div class="tab-row">${[['tables','Spieltische'],['results','Ergebnisse'],['teams','Teams'],['settings','Turnier'],...(CLOUD.canManageMembers?[['members','Mitglieder']]:[])].map(([tab,label])=>`<button class="tab-btn ${ui.adminTab===tab?'active':''}" data-action="admin-tab" data-tab="${tab}">${label}</button>`).join('')}</div><div class="v2-admin-tab-content">${ui.adminTab==='tables'?renderAdminTables():ui.adminTab==='results'?renderAdminResults():ui.adminTab==='teams'?renderAdminTeams():ui.adminTab==='members'?renderAdminMembers():renderAdminSettings()}</div></section>
         <aside class="v2-glass v2-panel"><div class="v2-panel-title"><div>${icon('clock')}<span>LETZTE AKTIVITÄTEN</span></div></div>${state.log.slice(0,8).map(e=>`<div class="admin-event">${icon('check')}<div>${escape(e.text)}<time>${timeString(e.time)} Uhr</time></div></div>`).join('')}</aside></div>
       </div>`;
   }
@@ -808,10 +808,11 @@ ${ui.signupOpen?`<form id="admin-signup" class="subtle-frame">
 case 'menu':ui.mobileMenu=!ui.mobileMenu;render();break;
       case 'admin-tab':
 ui.adminTab=btn.dataset.tab;render();
-if(ui.adminTab==='members')CLOUD.getMembers().then(m=>{ui.adminMembers=m;render();}).catch(e=>notify(e.message,true));break;
+if(ui.adminTab==='members'&&CLOUD.canManageMembers)CLOUD.getMembers().then(m=>{ui.adminMembers=m;render();}).catch(e=>notify(e.message,true));break;
 case 'cup':
 ui.saving=true;CLOUD.updateCups(btn.dataset.id,btn.dataset.side,Number(btn.dataset.delta)).then(next=>{state=next;ui.saving=false;render();}).catch(e=>{ui.saving=false;notify(e.message,true);});break;
 case 'member-remove':
+if(!CLOUD.canManageMembers)break;
 if(!window.confirm('Admin-Zugriff entziehen?'))break;
 ui.saving=true;CLOUD.changeMember('remove',btn.dataset.email).then(m=>{ui.adminMembers=m;ui.saving=false;render();}).catch(e=>{ui.saving=false;notify(e.message,true);});break;
       case 'live-filter':ui.liveFilter=btn.dataset.filter;ui.liveExpanded=false;render();break;
@@ -877,7 +878,7 @@ event.preventDefault();if(ui.saving)return;
 ui.saving=true;CLOUD.setTeamLimit(Number(event.target.elements.limit.value)).then(s=>{state=s;ui.saving=false;notify('Teamlimit gespeichert.');}).catch(e=>{ui.saving=false;notify(e.message,true);});return;
 }
 if(event.target.id==='member-add'){
-event.preventDefault();if(ui.saving)return;
+event.preventDefault();if(ui.saving||!CLOUD.canManageMembers)return;
 ui.saving=true;CLOUD.changeMember('add',event.target.elements.email.value.trim(),event.target.elements.role.value).then(m=>{ui.adminMembers=m;ui.saving=false;notify('Admin freigegeben.');}).catch(e=>{ui.saving=false;notify(e.message,true);});return;
 }
 if(event.target.id==='admin-signup'){

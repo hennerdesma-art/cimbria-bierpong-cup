@@ -17,6 +17,7 @@
       detectSessionInUrl: true, storageKey: "cimbria-cup-admin-session" },
   });
   let authorized = false;
+  let canManageMembers = false;
   let authEmail = "";
   let revision = 0;
   let tournamentId = null;
@@ -83,10 +84,12 @@
     if (error && !/missing|session/i.test(error.message || "")) console.warn("Auth:", error.message);
     authEmail = user?.email || "";
     authorized = false;
+    canManageMembers = false;
     if (user) {
       const r = await db("admin_users").select("role,active")
         .eq("user_id", user.id).eq("active",true).maybeSingle();
       authorized = !r.error && !!r.data;
+      canManageMembers = authorized && r.data?.role === "admin";
     }
     onAuth?.(authorized, authEmail);
     return authorized;
@@ -246,13 +249,14 @@
   async function logout() {
     const r = await client.auth.signOut();
     if (r.error) throw r.error;
-    authorized=false;authEmail="";
+    authorized=false;canManageMembers=false;authEmail="";
     onAuth?.(false,"");
     return await reload();
   }
   window.CimbriaCloud = {
     initialize, reload, save, guestRegister, signInAdmin, logout,setTeamLimit,updateCups,getMembers,changeMember,registerInvitedAdmin,
     get isAdmin() { return authorized; },
+    get canManageMembers() { return canManageMembers; },
     get email() { return authEmail; },
     get isBusy() { return busy; },
     get isConfigured() { return !!tournamentId; },
