@@ -39,13 +39,14 @@
     version: 3, phase: "registration", registrationOpen: false,
     teams: [], groups: [], matches: [], playoffMatches: [], tables: [], log: [],
     revision: 0, isPublished: false, maxTeams:32, minTeams:16,
+    tvAutoIntros:true, tvAutoWins:true, tvRotateBracket:true, tvMainMatchId:null,
   });
   const timestamp = (value) => value ? Date.parse(value) : null;
   const normalize = (t, teams, players, groups, members, tables, matches, logs) => {
     const groupCodes = Object.fromEntries(groups.map(g => [g.id, g.code]));
     const groupIds = Object.fromEntries(groups.map(g => [g.code, g.id]));
     const registeredTeams = teams.map(row => ({
-      id: row.id, name: row.name,
+      id: row.id, name: row.name, iconId:row.icon_id||"crown",
       players: players.filter(p => p.team_id === row.id)
         .sort((a,b) => a.slot-b.slot).map(p => p.full_name),
       createdAt: timestamp(row.created_at),
@@ -61,6 +62,8 @@
     return {
       version: 3, phase: t.phase, registrationOpen: t.registration_open,
       isPublished: t.is_published, revision: t.revision, maxTeams:t.max_teams, minTeams:t.min_teams,
+      tvAutoIntros:t.tv_auto_intros, tvAutoWins:t.tv_auto_wins,
+      tvRotateBracket:t.tv_rotate_bracket, tvMainMatchId:t.tv_main_match_id,
       teams: registeredTeams,
       groups: t.phase === "registration" ? [] : groups.map(g => ({
         name: g.code, id: groupIds[g.code],
@@ -97,7 +100,7 @@
   async function reload() {
     const key = ++requestCounter;
     const t = assert(await db("tournaments")
-      .select("id,name,slug,phase,registration_open,is_published,revision,max_teams,min_teams")
+      .select("id,name,slug,phase,registration_open,is_published,revision,max_teams,min_teams,tv_auto_intros,tv_auto_wins,tv_rotate_bracket,tv_main_match_id")
       .eq("slug",SLUG).maybeSingle());
     if (!t) {
       const blank = empty();
@@ -109,7 +112,7 @@
     const [
       teamR,groupR,memberR,tableR,matchR,
     ] = await Promise.all([
-      db("teams").select("id,name,created_at").eq("tournament_id",t.id).order("created_at"),
+      db("teams").select("id,name,icon_id,created_at").eq("tournament_id",t.id).order("created_at"),
       db("groups").select("id,code,sort_order").eq("tournament_id",t.id).order("sort_order"),
       db("group_members").select("group_id,team_id").eq("tournament_id",t.id),
       db("game_tables").select("id,name,sort_order,active").eq("tournament_id",t.id).order("sort_order"),
@@ -202,12 +205,12 @@
       return await reload();
     } finally { busy=false; }
   }
-  async function guestRegister(teamName, players) {
+  async function guestRegister(teamName, players, iconId="crown") {
     if (busy) throw new Error("Bitte warte einen Moment.");
     busy=true;
     try {
       const { data, error } = await client.functions.invoke("cimbria-register-team", {
-        body: {teamName, players},
+        body: {teamName, players, iconId},
       });
       if (error) {
         let msg = error.message || "Anmeldung fehlgeschlagen.";
@@ -246,6 +249,15 @@
     if(r.error)throw r.error;
     return true;
   }
+  async function tvControl(action, matchId=null, value=null) {
+    if (!authorized) throw new Error("Admin-Anmeldung erforderlich.");
+    const r = await client.rpc("cimbria_tv_control",{
+      p_action:action, p_match:matchId, p_value:value
+    });
+    assert(r);
+    await reload();
+    return r.data;
+  }
   async function logout() {
     const r = await client.auth.signOut();
     if (r.error) throw r.error;
@@ -254,7 +266,7 @@
     return await reload();
   }
   window.CimbriaCloud = {
-    initialize, reload, save, guestRegister, signInAdmin, logout,setTeamLimit,updateCups,getMembers,changeMember,registerInvitedAdmin,
+    initialize, reload, save, guestRegister, signInAdmin, logout,setTeamLimit,updateCups,getMembers,changeMember,registerInvitedAdmin,tvControl,
     get isAdmin() { return authorized; },
     get canManageMembers() { return canManageMembers; },
     get email() { return authEmail; },

@@ -16,6 +16,15 @@
   const VERSION = 3;
   const STORE_KEY = 'cimbria-cup-design-v2-demo';
   const GROUPS = ['A','B','C','D','E','F','G','H'];
+  const TEAM_ICONS = [
+    ['crown','Krone'],['skull','Totenkopf'],['flame','Flamme'],['bolt','Blitz'],
+    ['target','Bullseye'],['rocket','Rakete'],['shield','Schild'],['star','Stern'],
+    ['anchor','Anker'],['dragon','Drache'],['cup','Pokal'],['phoenix','Phönix']
+  ];
+  const TEAM_ICON_IDS = new Set(TEAM_ICONS.map(([id])=>id));
+  const teamIconUrl = id => 'assets/team-icons/'+(TEAM_ICON_IDS.has(id)?id:'crown')+'.svg';
+  const teamIconImg = (id,cl='team-icon-inline') =>
+    `<img class="${cl}" src="${teamIconUrl(id)}" alt="" loading="lazy" aria-hidden="true">`;
   const MAX_TEAMS = () => state.maxTeams || 32;
   const MIN_TEAMS = () => state.minTeams || 16;
   const DEMO_NAMES = [
@@ -64,7 +73,9 @@
   const escape = (value) => String(value == null ? '' : value).replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
   const teamById = id => state.teams.find(t => t.id === id);
   const teamLabel = id => id ? (teamById(id)?.name || 'Unbekanntes Team') : 'Noch offen';
-  const teamMarkup = id => escape(teamLabel(id));
+  const teamMarkup = id => id
+    ? `<span class="team-with-icon">${teamIconImg(teamById(id)?.iconId)}<span>${escape(teamLabel(id))}</span></span>`
+    : escape(teamLabel(id));
   const initials = name => name.split(/\s+/).map(x => x.charAt(0)).slice(0,2).join('').toUpperCase();
   const int = value => Number.isFinite(Number(value)) ? Number(value) : 0;
   const timeString = timestamp => timestamp ? new Date(timestamp).toLocaleTimeString('de-DE', {hour:'2-digit',minute:'2-digit'}) : '';
@@ -109,7 +120,7 @@
   let ui = {
     page: 'home', mobileMenu:false, adminTab:'tables', liveFilter:'all', liveGroup:'A',
     saving:false, cloudLoading:true, authSent:false, authEmail:'Henner@desma.africa',signupOpen:false,adminMembers:[],
-    liveSearch:'', liveExpanded:false, teamSearch:'', selections:{}, registration:{teamName:'',players:['','']}, toast:null
+    liveSearch:'', liveExpanded:false, teamSearch:'', selections:{}, registration:{teamName:'',players:['',''],iconId:'crown'}, toast:null
   };
   function persist(){ /* Live state is persisted in Supabase, never in localStorage. */ }
   let toastTimeout = null;
@@ -122,6 +133,15 @@
   function logAction(text){
     state.log.unshift({id:`log-${Date.now()}-${Math.random().toString(16).slice(2,5)}`,time:Date.now(),text});
     state.log=state.log.slice(0,35);
+  }
+  function runTvAction(action,matchId=null,value=null,message='TV-Regie aktualisiert.'){
+    if(ui.saving)return;
+    ui.saving=true;
+    CLOUD.tvControl(action,matchId,value).then(()=>{
+      ui.saving=false;notify(message);
+    }).catch(e=>{
+      ui.saving=false;notify('TV-Regie: '+e.message,true);
+    });
   }
   function commit(message,error=false){
     if (ui.saving) return;
@@ -395,8 +415,8 @@
     if (CLOUD){
       if(ui.saving)return;
       ui.saving=true;render();
-      CLOUD.guestRegister(teamName,players).then(async result=>{
-        ui.registration={teamName:'',players:['','']};
+      CLOUD.guestRegister(teamName,players,ui.registration.iconId||'crown').then(async result=>{
+        ui.registration={teamName:'',players:['',''],iconId:'crown'};
         ui.saving=false;
         notify('Willkommen, '+result.team+'! Eure Anmeldung wurde gespeichert.');
       }).catch(err=>{ui.saving=false;notify(err.message,true);});
@@ -404,7 +424,7 @@
     }
     state.teams.push({id:crypto.randomUUID(),name:teamName,players,createdAt:Date.now()});
     logAction(`Neues Team registriert: ${teamName} (${players.length} Personen).`);
-    ui.registration={teamName:'',players:['','']};
+    ui.registration={teamName:'',players:['',''],iconId:'crown'};
     commit(`Willkommen, ${teamName}! Eure Anmeldung wurde in dieser Browser-Demo gespeichert.`);
   }
   function addTable(){
@@ -437,7 +457,7 @@
     if(CLOUD){notify('Ein Zurücksetzen des Online-Turniers ist deaktiviert.',true);return;}
     if(!window.confirm('Alle lokalen Änderungen einschließlich Anmeldungen, Ergebnissen und Tischen löschen und die 24 Demo-Teams wiederherstellen?'))return;
     state=seedData();
-    ui.selections={};ui.registration={teamName:'',players:['','']};
+    ui.selections={};ui.registration={teamName:'',players:['',''],iconId:'crown'};
     commit('Die Demo wurde auf den Ausgangszustand zurückgesetzt.');
     navigate('home');
   }
@@ -530,6 +550,16 @@
         ${!open?`<div class="notice danger-note">${icon('info')}<div>${spots===0?'Alle Plätze vergeben.':'Anmeldung geschlossen.'} Die Turnierleitung kann die Anmeldung bei Bedarf öffnen.</div></div>`:''}
         <form id="team-registration" ${!open?'aria-disabled="true"':''}>
           <div class="field"><label for="team-name">Teamname <span class="gold">*</span></label><input id="team-name" name="teamName" data-draft="name" maxlength="35" minlength="3" value="${escape(ui.registration.teamName)}" placeholder="z. B. Die Zirkelfreunde" autocomplete="off" ${!open?'disabled':''} required/><span class="field-note">Euer Teamname erscheint im Spielplan und den Tabellen.</span></div>
+          <fieldset class="cim-icon-fieldset" ${!open?'disabled':''}>
+            <legend>${icon('star')} Euer Team-Emblem</legend>
+            <p class="muted text-sm">Wählt ein Emblem – es erscheint im Spielplan, im Live-TV-Modus und im Turnierbaum.</p>
+            <div class="cim-icon-grid" aria-label="Team-Emblem auswählen">
+              ${TEAM_ICONS.map(([id,label])=>`<button type="button" data-action="team-icon" data-id="${id}"
+                class="cim-icon-option ${(ui.registration.iconId||'crown')===id?'selected':''}"
+                aria-label="Emblem ${escape(label)}" aria-pressed="${(ui.registration.iconId||'crown')===id}"
+                ${!open?'disabled':''}>${teamIconImg(id,'cim-picker-img')}<span>${escape(label)}</span></button>`).join('')}
+            </div>
+          </fieldset>
           <div class="player-heading"><div><h3>${icon('users')} Teammitglieder</h3><p>Spieler 1 und 2 sind Pflicht; weitere sind optional.</p></div><span class="badge gold">${ui.registration.players.length} / 4</span></div>
           ${ui.registration.players.map((name,i)=>`<div class="player-row v2-player-row"><span class="player-nr">${icon('users')}</span><label class="v2-player-label" for="player-${i}">${i===0?'Teamkapitän':`Spieler ${i+1}`} ${i>1?'<small>optional</small>':''}</label><input id="player-${i}" class="input" name="player" data-player="${i}" type="text" value="${escape(name)}" maxlength="50" minlength="2" placeholder="Vor- und Nachname" ${!open?'disabled':''} required/>${i>=2?`<button type="button" data-action="remove-player" data-index="${i}" aria-label="Spieler ${i+1} entfernen" class="tiny-button" ${!open?'disabled':''}>${icon('close')}</button>`:'<span class="v2-required">*</span>'}</div>`).join('')}
           <button type="button" data-action="add-player" class="btn btn-quiet btn-sm v2-add-player" ${!open||ui.registration.players.length>=4?'disabled':''}>${icon('plus')} Spieler hinzufügen</button>
@@ -538,7 +568,7 @@
           <div class="privacy-note">Eure Anmeldung wird zentral im Cimbria-Turniersystem gespeichert.</div>
         </form>
       </section><aside class="v2-glass v2-info-card"><div class="v2-section-head">${icon('trophy')}<h2>Wichtigste Infos</h2></div>
-        ${[["users","2–4 Spieler","Zwei aktive Spieler pro Partie. Zusätzliche Mitglieder können wechseln."],["grid","Maximal ${MAX_TEAMS()} Teams","Die Anzahl legt die Turnierleitung fest."],["trophy","Gruppen + Playoffs","8 Gruppen, anschließend K.-o.-Runde mit 16 Teams."],["radio","Ergebnisse live verfolgen","Alle bestätigten Siege sind für alle Besucher live sichtbar."]].map(([ico,t,d])=>`<div class="v2-info-item"><div class="v2-info-icon">${icon(ico)}</div><div><strong>${t}</strong><p>${d}</p></div></div>`).join('')}
+        ${[["users","2–4 Spieler","Zwei aktive Spieler pro Partie. Zusätzliche Mitglieder können wechseln."],["grid",`Maximal ${MAX_TEAMS()} Teams`,"Die Anzahl legt die Turnierleitung fest."],["trophy","Gruppen + Playoffs","8 Gruppen, anschließend K.-o.-Runde mit 16 Teams."],["radio","Ergebnisse live verfolgen","Alle bestätigten Siege sind für alle Besucher live sichtbar."]].map(([ico,t,d])=>`<div class="v2-info-item"><div class="v2-info-icon">${icon(ico)}</div><div><strong>${t}</strong><p>${d}</p></div></div>`).join('')}
         <div class="v2-seat-card"><div class="wide-line"><span>Aktueller Anmeldestand</span><strong>${state.teams.length} / ${MAX_TEAMS()}</strong></div><div class="progress-track"><div class="progress-bar" style="width:${Math.min(100,state.teams.length/MAX_TEAMS()*100)}%"></div></div><small>${spots} Plätze verfügbar · ${open?'Anmeldung geöffnet':'Anmeldung geschlossen'}</small></div>
         <a href="#/info" class="v2-info-link">Turnierregeln & häufige Fragen ${icon('arrow')}</a>
       </aside></div></div>`;
@@ -565,7 +595,7 @@
       return true;
     }).sort((a,b)=>({live:0,ready:1,open:2,done:3}[a.status]-{live:0,ready:1,open:2,done:3}[b.status])||(a.order||0)-(b.order||0));
     const visible=ui.liveExpanded||ui.liveSearch?filtered:filtered.slice(0,12);
-    return `${pageBanner('LIVE · DIREKT VOM SPIELTISCH','Das Turnier <em>live</em>','Alle Begegnungen, Tische und Ergebnisse auf einen Blick. Nur Siege und Niederlagen – kein laufender Becherstand.')}
+    return `${pageBanner('LIVE · DIREKT VOM SPIELTISCH','Das Turnier <em>live</em>','Alle Begegnungen, Tische, Live-Becherstände und Ergebnisse auf einen Blick.')}
     <div class="container content-pad v2-live-page">
       <div class="v2-live-kpis"><div class="v2-glass"><span>${icon('radio')} GERADE LIVE</span><strong>${live.length}</strong><small>laufende Matches</small></div><div class="v2-glass"><span>${icon('table')} AKTIVE TISCHE</span><strong>${state.tables.filter(t=>t.active).length}</strong><small>zur Verfügung</small></div><div class="v2-glass"><span>${icon('check')} ABSOLVIERT</span><strong>${done.length}</strong><small>Spiele abgeschlossen</small></div><div class="v2-glass"><span>${icon('clock')} NOCH AUSSTEHEND</span><strong>${matches.length-done.length}</strong><small>inkl. vorbereiteter Spiele</small></div></div>
       <div class="v2-live-featured">
@@ -586,7 +616,7 @@
       `${t.name} ${t.players.join(' ')}`:t.name).toLocaleLowerCase('de').includes(ui.teamSearch.toLocaleLowerCase('de')));
     return `${pageBanner('DIE KONKURRENZ','Alle <em>Teams</em>','Lerne die Mannschaften kennen, die um den Cimbria Cup spielen.')}
       <div class="container content-pad"><div class="v2-glass v2-panel"><div class="v2-panel-title"><div>${icon('users')}<span>${state.teams.length} TEAMS ANGEMELDET</span></div><a href="#/registration">Team anmelden ${icon('arrow')}</a></div><input id="team-search" class="search-input v2-team-search" type="search" placeholder="Nach Team suchen ..." aria-label="Teams suchen" value="${escape(ui.teamSearch||'')}">
-      <div class="v2-teams-grid">${teams.map(t=>`<div class="v2-team-card"><div class="v2-team-badge">${icon('users')}</div><strong>${escape(t.name)}</strong><span>${CLOUD.isAdmin?t.players.length+' Teammitglieder':'Angemeldet'}</span>
+      <div class="v2-teams-grid">${teams.map(t=>`<div class="v2-team-card"><div class="v2-team-badge cim-team-crest">${teamIconImg(t.iconId,'team-card-crest')}</div><strong>${escape(t.name)}</strong><span>${CLOUD.isAdmin?t.players.length+' Teammitglieder':'Angemeldet'}</span>
         <p>${CLOUD.isAdmin?t.players.map(escape).join(' · '):'Cimbria Bierpong Cup'}</p></div>`).join('')||'<p class="muted">Keine Teams gefunden.</p>'}</div></div></div>`;
   }
   function renderSchedule(){
@@ -660,7 +690,8 @@
 <button class="btn btn-outline btn-sm" data-action="cup" data-id="${m.id}" data-side="${side}" data-delta="1" ${cups>=10?'disabled':''}>+</button></div></div>`).join('')}</div><p>Sieger anschließend separat bestätigen.</p></div><div class="table-actions"><button class="btn btn-outline btn-sm" data-action="finish" data-match="${m.id}" data-winner="${m.teamAId}">${icon('trophy')} ${escape(teamLabel(m.teamAId))}</button><button class="btn btn-outline btn-sm" data-action="finish" data-match="${m.id}" data-winner="${m.teamBId}">${icon('trophy')} ${escape(teamLabel(m.teamBId))}</button></div>`;
       }
       return `<article class="table-card ${m?.status==='live'?'is-live':m?'is-ready':t.active?'':'inactive'}">
-        <div class="table-title"><strong>${icon('table')} ${escape(t.name)}</strong><span class="badge ${m?.status==='live'?'green':m?'gold':''}">${!t.active?'Inaktiv':m?m.status==='live'?'Läuft':'Bereit':'Frei'}</span></div>${body}
+        <div class="table-title"><strong>${icon('table')} ${escape(t.name)} ${m&&m.id===state.tvMainMatchId?'<span class="tv-main-star">★ MAIN STAGE</span>':''}</strong><span class="badge ${m?.status==='live'?'green':m?'gold':''}">${!t.active?'Inaktiv':m?m.status==='live'?'Läuft':'Bereit':'Frei'}</span></div>${body}
+        ${m?`<div class="tv-table-control"><button class="btn btn-quiet btn-sm" data-action="tv-main-pick" data-id="${m.id}" ${state.tvMainMatchId===m.id?'disabled':''}>★ ${state.tvMainMatchId===m.id?'Main Stage aktiv':'Als Main Stage markieren'}</button></div>`:''}
       </article>`;
     }).join('');
     return `<div class="wide-line" style="margin-bottom:16px"><div><div class="card-title">Spieltische und Zuweisungen</div><div class="card-subtitle">Hybridmodus: Die App schlägt vor, die Turnierleitung entscheidet.</div></div><button class="btn btn-outline btn-sm" data-action="add-table">${icon('plus')} Tisch hinzufügen</button></div>
@@ -702,6 +733,47 @@
       <div class="subtle-frame" style="margin-top:14px"><div class="panel-caption">SCHRITT 2 · ECHTE ERGEBNISSE</div><h3 class="serif" style="font-size:22px;margin:8px 0">Gruppenspiele abschließen</h3><p class="muted text-sm" style="line-height:1.7;margin:0">Noch offen: <strong>${remain}</strong>. Bitte Sieger an den jeweiligen Tischen bestätigen.</p></div>
       <div class="subtle-frame" style="margin-top:14px"><div class="panel-caption">SCHRITT 3 · PLAYOFFS</div><h3 class="serif" style="font-size:22px;margin:8px 0">Playoffs freigeben</h3><p class="muted text-sm" style="line-height:1.7;margin:0 0 16px">Die acht Gruppensieger und acht Gruppenzweiten werden automatisch für das Achtelfinale gesetzt. Bei ungelösten Gleichständen ist dieser Schritt gesperrt.</p><button class="btn btn-gold" data-action="start-playoffs" ${matchesReady?'':'disabled'}>${icon('trophy')} Playoffs starten</button></div>
       <div class="admin-separator"></div>
+      <div class="subtle-frame cim-tv-control">
+        <div class="wide-line cim-tv-top">
+          <div><div class="panel-caption">CIMBRIA LIVE-TV · REGIE</div><h3 class="serif" style="font-size:25px;margin:7px 0">Live-TV & Animationen</h3>
+            <p class="muted text-sm">Der Fernseher läuft eigenständig. Die Steuerung erfolgt ausschließlich hier im Admin-Dashboard.</p></div>
+          <a class="btn btn-gold btn-sm" href="tv.html" target="_blank" rel="noopener noreferrer">${icon('radio')} TV öffnen ↗</a>
+        </div>
+        <div class="cim-tv-switches">
+          ${[['auto_intros','Automatische VS-Intros',state.tvAutoIntros,'Beim Start eines Main-Stage-Spiels'],
+              ['auto_wins','Automatische Siegeranimation',state.tvAutoWins,'Nach manueller Bestätigung des Gewinners'],
+              ['rotate_bracket','Turnierbaum automatisch zeigen',state.tvRotateBracket,'Regelmäßige Einblendung während der Playoffs']].map(([setting,label,enabled,description])=>`
+           <div class="cim-tv-switch-row"><div><strong>${label}</strong><small>${description}</small></div>
+            <button type="button" class="cim-tv-switch ${enabled?'active':''}" role="switch"
+              aria-checked="${!!enabled}" aria-label="${label}" data-action="tv-toggle"
+              data-setting="${setting}" data-enabled="${!!enabled}">${enabled?'AN':'AUS'}</button></div>`).join('')}
+        </div>
+        <form id="cim-tv-main" class="cim-tv-main-form">
+          <label for="tv-select-main"><b>Main-Stage-Spiel</b><span class="muted text-xs">Nur dieses Spiel löst automatische Intros und Siegeranimationen aus.</span></label>
+          <select id="tv-select-main" class="table-select" name="matchId">
+            <option value="">Kein Spiel als Main Stage auswählen</option>
+            ${allMatches().filter(m=>['ready','live'].includes(m.status)).map(m=>`<option value="${m.id}" ${state.tvMainMatchId===m.id?'selected':''}>${escape(matchTitle(m))} · ${escape(state.tables.find(t=>t.id===m.tableId)?.name||'Tisch noch offen')}</option>`).join('')}
+          </select>
+          <button type="submit" class="btn btn-outline btn-sm">${icon('check')} Main Stage speichern</button>
+        </form>
+        <div class="cim-tv-preview-tools">
+          <strong>Jetzt auf dem TV anzeigen</strong>
+          <div class="cim-tv-actions">
+            <button type="button" class="btn btn-outline btn-sm" data-action="tv-cue" data-kind="intro" data-match="${state.tvMainMatchId||''}"
+              ${!allMatches().some(m=>m.id===state.tvMainMatchId&&['ready','live'].includes(m.status))?'disabled title="Zuerst ein bereites oder laufendes Main-Stage-Spiel auswählen"':''}>VS-Intro senden</button>
+            <button type="button" class="btn btn-outline btn-sm" data-action="tv-cue" data-kind="winner" data-match="${state.tvMainMatchId||''}"
+              ${!allMatches().some(m=>m.id===state.tvMainMatchId&&m.status==='done')?'disabled title="Nur nach bestätigtem Ergebnis"':''}>Siegeranimation senden</button>
+            <button type="button" class="btn btn-outline btn-sm" data-action="tv-cue" data-kind="bracket">Turnierbaum einblenden</button>
+            <button type="button" class="btn btn-quiet btn-sm" data-action="tv-cue" data-kind="clear">Einblendung beenden</button>
+          </div>
+          <div class="cim-tv-test-links">
+            <span class="muted text-xs">Animationsvorschau ohne echte Teams:</span>
+            <a href="tv.html?preview=intro" target="_blank" rel="noopener noreferrer">VS-Intro testen ↗</a>
+            <a href="tv.html?preview=winner" target="_blank" rel="noopener noreferrer">Sieg testen ↗</a>
+            <a href="tv.html?preview=bracket" target="_blank" rel="noopener noreferrer">Turnierbaum testen ↗</a>
+          </div>
+        </div>
+      </div>
 <form id="team-limit" class="subtle-frame"><h3 class="serif" style="font-size:22px">Maximale Teamanzahl</h3>
 <p class="muted text-sm">16 bis 512 Teams, vor der Auslosung änderbar. Größere Turniere führen zu mehr Gruppenspielen.</p>
 <div class="field"><input type="number" name="limit" min="16" max="512" value="${MAX_TEAMS()}" required></div>
@@ -741,6 +813,7 @@ ${ui.signupOpen?`<form id="admin-signup" class="subtle-frame">
     return `${pageBanner('TURNIERLEITUNG · HYBRIDMODUS','Admin <em>Control Center</em>','Tische steuern. Begegnungen verwalten. Den Weg zum Finale freigeben.')}
       <div class="container content-pad v2-admin-page">
       <div class="v2-admin-notice">${icon('shield')} <span><b>Geschützter Admin-Bereich</b> · ${escape(CLOUD.email)} · Änderungen werden in Supabase gespeichert.</span>
+      <a class="btn btn-gold btn-sm" href="tv.html" target="_blank" rel="noopener noreferrer">${icon('radio')} Live-TV öffnen ↗</a>
       <button class="btn btn-quiet btn-sm" data-action="admin-logout">Abmelden</button></div>
       <div class="v2-admin-top"><section class="v2-glass v2-panel v2-admin-phase"><div class="v2-panel-title"><div>${icon('grid')}<span>TURNIERSTATUS</span></div></div>
         <span class="v2-eyebrow">Aktuelle Phase</span><h2>${state.phase==='registration'?'Anmeldung':state.phase==='groups'?'Gruppenphase':'Playoffs'}</h2><p>${state.teams.length} / ${MAX_TEAMS()} Teams registriert</p>
@@ -790,7 +863,7 @@ ${ui.signupOpen?`<form id="admin-signup" class="subtle-frame">
   function handleAction(btn){
     const action=btn.dataset.action;
     const publicActions=['menu','live-filter','live-expand','group',
-      'add-player','remove-player','close-toast'];
+      'add-player','remove-player','close-toast','team-icon'];
     if(ui.saving && !['menu','close-toast'].includes(action))return;
     if(!CLOUD.isAdmin && !publicActions.includes(action) && action!=='signup-toggle')return;
     switch(action){
@@ -803,6 +876,20 @@ ${ui.signupOpen?`<form id="admin-signup" class="subtle-frame">
         ui.saving=true;
         CLOUD.logout().then(()=>{ui.saving=false;notify('Abgemeldet.');})
           .catch(e=>{ui.saving=false;notify(e.message,true);});
+        break;
+      case 'tv-main-pick':
+        runTvAction('main_stage',btn.dataset.id,null,'Main Stage wurde ausgewählt.');
+        break;
+      case 'tv-toggle':
+        runTvAction(btn.dataset.setting,null,btn.dataset.enabled!=='true','TV-Einstellung gespeichert.');
+        break;
+      case 'tv-cue':
+        runTvAction(btn.dataset.kind,btn.dataset.match||null,null,'Einblendung wurde an den Live-TV-Modus gesendet.');
+        break;
+      case 'team-icon':
+        if(TEAM_ICON_IDS.has(btn.dataset.id)){
+          ui.registration.iconId=btn.dataset.id;render();
+        }
         break;
       case 'signup-toggle':ui.signupOpen=!ui.signupOpen;render();break;
 case 'menu':ui.mobileMenu=!ui.mobileMenu;render();break;
@@ -873,6 +960,12 @@ ui.saving=true;CLOUD.changeMember('remove',btn.dataset.email).then(m=>{ui.adminM
     if(tableId)ui.selections[tableId]=event.target.value;
   });
   document.addEventListener('submit',event=>{
+    if(event.target.id==='cim-tv-main'){
+      event.preventDefault();
+      if(ui.saving||!CLOUD.isAdmin)return;
+      runTvAction('main_stage',event.target.elements.matchId.value||null,null,'Main Stage gespeichert.');
+      return;
+    }
     if(event.target.id==='team-limit'){
 event.preventDefault();if(ui.saving)return;
 ui.saving=true;CLOUD.setTeamLimit(Number(event.target.elements.limit.value)).then(s=>{state=s;ui.saving=false;notify('Teamlimit gespeichert.');}).catch(e=>{ui.saving=false;notify(e.message,true);});return;

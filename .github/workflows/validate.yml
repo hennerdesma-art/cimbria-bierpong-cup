@@ -1,7 +1,7 @@
 name: Validate Cimbria Website
 on:
   push:
-    branches: [main, feat/supabase-auth-live, feat/admin-password-login, feat/cup-score-admin-team-limit]
+    branches: [main, feat/supabase-auth-live, feat/admin-password-login, feat/cup-score-admin-team-limit, feat/v5-cinematic-tv-emblems]
   pull_request:
     branches: [main]
 permissions:
@@ -15,12 +15,34 @@ jobs:
         run: |
           node --check js/cloud.js
           node --check js/app.js
-      - name: Check essential assets
+          node --check js/tv.js
+      - name: Check files and TV references
         run: |
           test -s index.html
+          test -s tv.html
           test -s css/base.css
           test -s css/v2.css
           test -s css/cloud.css
+          test -s css/tv.css
           test -s assets/background-bierpong.mp4
           test -s assets/zirkel-cimbria.png
           test -s supabase/functions/cimbria-register-team/index.ts
+          grep -q 'assets/background-bierpong.mp4' tv.html
+          grep -q 'js/tv.js' tv.html
+          grep -q 'cimbria_tv_control' js/cloud.js
+          grep -q 'TEAM_ICONS' js/app.js
+      - name: Validate all 12 team SVG crests
+        run: |
+          python3 -c 'import glob,xml.etree.ElementTree as ET; fs=glob.glob("assets/team-icons/*.svg"); assert len(fs)==12, len(fs); [ET.parse(p) for p in fs]; print("12 SVG crests: valid")'
+      - name: Verify TV HTML element IDs
+        run: |
+          node - <<'NODE'
+          const fs = require('fs');
+          const assert = require('node:assert/strict');
+          const html = fs.readFileSync('tv.html','utf8');
+          const script = fs.readFileSync('js/tv.js','utf8');
+          const refs = [...script.matchAll(/\$\("([a-z0-9-]+)"\)/g)].map(m => m[1]);
+          const missing = [...new Set(refs)].filter(id => !html.includes('id="' + id + '"'));
+          assert.deepEqual(missing, [], 'Missing DOM nodes: ' + missing.join(','));
+          console.log('TV DOM references: valid');
+          NODE

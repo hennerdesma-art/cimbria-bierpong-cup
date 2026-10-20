@@ -23,3 +23,49 @@ button[disabled] { cursor: not-allowed; opacity: .6; }
 .cup-buttons .btn{min-width:45px;min-height:36px;font-size:20px}
 #team-limit input,#member-add input,#member-add select,#admin-signup input{box-sizing:border-box;display:block;width:100%;margin-top:7px;padding:12px 15px;font:inherit;color:#f7edf3;background:rgba(30,12,34,.8);border:1px solid rgba(199,151,94,.35);border-radius:10px}
 #admin-signup{margin-top:17px}
+
+
+/* V5 · Curated Cimbria team crests. Icons are local SVGs, never external uploads. */
+.team-with-icon{display:inline-flex;align-items:center;gap:6px;vertical-align:middle;max-width:100%;white-space:normal}
+.team-with-icon>span{min-width:0;overflow-wrap:anywhere}
+.team-icon-inline{display:inline-block;width:23px;height:26px;object-fit:contain;flex:none;vertical-align:middle;filter:drop-shadow(0 1px 4px rgba(239,178,92,.12))}
+.v2-team-badge.cim-team-crest{display:flex;align-items:center;justify-content:center;min-width:66px;height:70px;background:radial-gradient(circle at center,rgba(207,138,77,.13),transparent 67%)}
+.team-card-crest{width:66px;height:74px;object-fit:contain;filter:drop-shadow(0 0 13px rgba(231,163,65,.14))}
+.cim-icon-fieldset{margin:24px 0 20px;padding:18px;border:1px solid rgba(219,166,91,.3);border-radius:14px;background:rgba(15,6,22,.43);min-width:0}
+.cim-icon-fieldset legend{padding:0 7px;color:#f1d8a0;font:700 16px Manrope,system-ui,sans-serif;letter-spacing:.035em}
+.cim-icon-fieldset .muted{line-height:1.7;margin:0 0 14px}
+.cim-icon-grid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:9px}
+.cim-icon-option{appearance:none;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:4px;min-width:0;min-height:93px;padding:7px 3px 8px;border:1px solid rgba(230,179,97,.24);border-radius:11px;background:linear-gradient(150deg,rgba(54,22,49,.7),rgba(15,5,24,.72));color:#d4c5cf;cursor:pointer;transition:transform .18s ease,border-color .18s ease,box-shadow .18s ease,background .18s ease}
+.cim-icon-option:hover{border-color:rgba(251,208,138,.76);transform:translateY(-3px);box-shadow:0 7px 22px rgba(0,0,0,.3)}
+.cim-icon-option.selected{border-color:#f4c975;background:linear-gradient(160deg,rgba(106,43,65,.85),rgba(28,10,31,.92));box-shadow:inset 0 0 0 1px rgba(253,222,160,.27),0 0 22px rgba(238,175,68,.21);color:#ffe4b0}
+.cim-icon-option:focus-visible{outline:3px solid #f6cc75;outline-offset:3px}
+.cim-icon-option:disabled{opacity:.45;cursor:not-allowed;transform:none}
+.cim-picker-img{width:54px;height:61px;max-width:100%;object-fit:contain}
+.cim-icon-option span{font-size:10px;line-height:1.3;font-weight:700;white-space:nowrap}
+.cim-tv-control{position:relative;overflow:hidden;padding:20px!important;border-color:rgba(238,188,104,.38)!important;background:radial-gradient(ellipse at 100% 0%,rgba(115,47,66,.27),transparent 67%),rgba(22,9,30,.7)}
+.cim-tv-top{align-items:flex-start;gap:14px}.cim-tv-top h3{color:#ffdf9d}
+.cim-tv-switches{margin:18px 0 22px;display:grid;gap:9px}
+.cim-tv-switch-row{display:flex;align-items:center;justify-content:space-between;gap:15px;padding:13px 14px;background:rgba(12,5,18,.55);border:1px solid rgba(229,177,105,.18);border-radius:11px}
+.cim-tv-switch-row>div{display:flex;flex-direction:column;gap:4px}
+.cim-tv-switch-row strong{font-size:13px;color:#f3e4d1}
+.cim-tv-switch-row small{font-size:11px;color:#ae9da9}
+.cim-tv-switch{flex:none;min-width:62px;min-height:35px;padding:6px 11px;background:rgba(67,39,48,.65);border:1px solid rgba(243,181,108,.35);border-radius:20px;color:#d1bdb0;font-weight:800;letter-spacing:.1em;cursor:pointer}
+.cim-tv-switch.active{background:linear-gradient(135deg,#f5d18c,#b88537);color:#201013;box-shadow:0 0 18px rgba(241,171,72,.26)}
+.cim-tv-switch:focus-visible{outline:3px solid #edc376;outline-offset:3px}
+.cim-tv-main-form{padding:17px 0;border-top:1px solid rgba(230,182,111,.17);border-bottom:1px solid rgba(230,182,111,.17)}
+.cim-tv-main-form label{display:flex;flex-direction:column;gap:4px;margin-bottom:11px;color:#f4dfbe;font-size:13px}
+.cim-tv-main-form .table-select{width:100%;max-width:100%;margin-bottom:11px}
+.cim-tv-preview-tools{padding-top:16px;display:grid;gap:13px}
+.cim-tv-preview-tools>strong{font-size:13px;color:#f6ddad}
+.cim-tv-actions{display:flex;flex-wrap:wrap;gap:8px}
+.cim-tv-test-links{display:flex;align-items:center;flex-wrap:wrap;gap:12px;border-top:1px solid rgba(237,185,96,.16);padding-top:12px}
+.cim-tv-test-links a{font-size:12px;font-weight:800;color:#efd096;text-underline-offset:3px;text-decoration:underline}
+.cim-tv-test-links a:hover{color:white}
+.tv-main-star{font-size:10px;font-weight:800;color:#eec36d;letter-spacing:.09em;margin-left:4px;white-space:nowrap}
+.tv-table-control{padding:9px 13px 13px;border-top:1px solid rgba(244,187,99,.12)}
+.tv-table-control>.btn{width:100%;text-align:center}
+.v2-bracket .bracket-team.winner,.bracket-team.winner{transition:filter .2s ease;border-color:rgba(242,187,84,.44)}
+.v2-bracket .bracket-team.winner:hover{filter:drop-shadow(0 0 9px rgba(240,182,72,.4))}
+@media(max-width:950px){.cim-icon-grid{grid-template-columns:repeat(4,minmax(0,1fr))}}
+@media(max-width:560px){.cim-icon-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}.cim-picker-img{width:50px;height:56px}.cim-icon-option{min-height:82px}.cim-icon-option span{font-size:9px}.cim-tv-top{align-items:flex-start;flex-direction:column}.cim-tv-actions .btn{flex:1 1 130px}.team-icon-inline{width:20px;height:24px}}
+@media(prefers-reduced-motion:reduce){.cim-icon-option{transition:none}.cim-icon-option:hover{transform:none}}

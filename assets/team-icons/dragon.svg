@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="240" height="260" viewBox="0 0 240 260" role="img" aria-label="Drache">
+<defs><linearGradient id="plate" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#271322"/><stop offset=".55" stop-color="#130B19"/><stop offset="1" stop-color="#71273C"/></linearGradient>
+<linearGradient id="edge" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#E77968"/><stop offset=".5" stop-color="#FFF0C3"/><stop offset="1" stop-color="#71273C"/></linearGradient>
+<radialGradient id="aura"><stop stop-color="#E77968" stop-opacity=".22"/><stop offset="1" stop-color="#E77968" stop-opacity="0"/></radialGradient>
+<filter id="glow" x="-80%" y="-80%" width="260%" height="260%"><feGaussianBlur stdDeviation="6"/></filter></defs>
+<path d="M120 9Q157 25 209 36L209 141Q208 202 120 246Q32 202 31 141L31 36Q83 25 120 9Z" fill="#0B0710"/>
+<path d="M120 15Q159 31 203 41L203 141Q199 199 120 238Q41 199 37 141L37 41Q81 31 120 15Z" fill="url(#plate)" stroke="url(#edge)" stroke-width="3"/>
+<path d="M120 28Q158 43 189 49L189 141Q185 192 120 225Q55 192 51 141L51 49Q82 43 120 28Z" fill="none" stroke="#E77968" stroke-opacity=".26" stroke-width="2"/>
+<circle cx="120" cy="114" r="74" fill="url(#aura)"/><circle cx="120" cy="114" r="44" fill="#E77968" fill-opacity=".09" filter="url(#glow)"/>
+<g transform="translate(72 66) scale(4)" fill="none" stroke="#E77968" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.65"><path d="M19 3c-.2 3-2.4 3.6-4.2 4.1l3.4 1.8-2 3.2-3.5-.2-2.9 4.1 1.8 4-4.9 2-.8-4.5-4.3-1.8 5-4.4.2-4 4.4 1 2.5-4.8Z"/><path d="m18 9 4 2-2 3M13 5l-1-3M8 12l-5-1"/><circle cx="16.2" cy="8.7" r=".7" fill="currentColor" stroke="none"/></g>
+<path d="M92 190h56" stroke="url(#edge)" stroke-width="1.7" stroke-linecap="round"/><path d="M120 31v10M120 216v8" stroke="#E77968" stroke-width="2" stroke-linecap="round" opacity=".75"/>
+<path d="M119 15h2M53 62h2M186 62h2" stroke="#FFF2D3" stroke-width="2" opacity=".8"/>
+</svg>

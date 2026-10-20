@@ -38,8 +38,12 @@ Deno.serve(async (req: Request) => {
     const name = typeof body?.teamName === "string"
       ? body.teamName.trim().replace(/\s+/g, " ") : "";
     const players = Array.isArray(body?.players) ? body.players : [];
+    const allowedIcons = new Set(["crown","skull","flame","bolt","target","rocket",
+      "shield","star","anchor","dragon","cup","phoenix"]);
+    const iconId = typeof body?.iconId === "string" ? body.iconId : "crown";
     if (name.length < 3 || name.length > 35 ||
         players.length < 2 || players.length > 4 ||
+        !allowedIcons.has(iconId) ||
         players.some((p: unknown) => typeof p !== "string" ||
           p.trim().length < 2 || p.trim().length > 50)) {
       return json({ error: "Bitte Teamname und 2–4 vollständige Spielernamen prüfen." }, 400, origin);
@@ -61,6 +65,7 @@ Deno.serve(async (req: Request) => {
         p_slug: "cimbria-bierpong-cup",
         p_name: name,
         p_players: players.map((p: string) => p.trim().replace(/\s+/g, " ")),
+        p_icon_id: iconId,
       }),
     });
     const result = await answer.json().catch(() => ({}));

@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="240" height="260" viewBox="0 0 240 260" role="img" aria-label="Pokal">
+<defs><linearGradient id="plate" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#271322"/><stop offset=".55" stop-color="#130B19"/><stop offset="1" stop-color="#6D5226"/></linearGradient>
+<linearGradient id="edge" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#D9B887"/><stop offset=".5" stop-color="#FFF0C3"/><stop offset="1" stop-color="#6D5226"/></linearGradient>
+<radialGradient id="aura"><stop stop-color="#D9B887" stop-opacity=".22"/><stop offset="1" stop-color="#D9B887" stop-opacity="0"/></radialGradient>
+<filter id="glow" x="-80%" y="-80%" width="260%" height="260%"><feGaussianBlur stdDeviation="6"/></filter></defs>
+<path d="M120 9Q157 25 209 36L209 141Q208 202 120 246Q32 202 31 141L31 36Q83 25 120 9Z" fill="#0B0710"/>
+<path d="M120 15Q159 31 203 41L203 141Q199 199 120 238Q41 199 37 141L37 41Q81 31 120 15Z" fill="url(#plate)" stroke="url(#edge)" stroke-width="3"/>
+<path d="M120 28Q158 43 189 49L189 141Q185 192 120 225Q55 192 51 141L51 49Q82 43 120 28Z" fill="none" stroke="#D9B887" stroke-opacity=".26" stroke-width="2"/>
+<circle cx="120" cy="114" r="74" fill="url(#aura)"/><circle cx="120" cy="114" r="44" fill="#D9B887" fill-opacity=".09" filter="url(#glow)"/>
+<g transform="translate(72 66) scale(4)" fill="none" stroke="#D9B887" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.65"><path d="M6 3h12v8c0 4-2 6-6 6s-6-2-6-6Z"/><path d="M6 5H2v3c0 3 2 4 5 4m11-7h4v3c0 3-2 4-5 4M12 17v4M7 22h10"/><circle cx="12" cy="10" r="2.2"/></g>
+<path d="M92 190h56" stroke="url(#edge)" stroke-width="1.7" stroke-linecap="round"/><path d="M120 31v10M120 216v8" stroke="#D9B887" stroke-width="2" stroke-linecap="round" opacity=".75"/>
+<path d="M119 15h2M53 62h2M186 62h2" stroke="#FFF2D3" stroke-width="2" opacity=".8"/>
+</svg>

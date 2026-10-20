@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#110815">
+<meta name="description" content="Cimbria Bierpong Cup – Live-TV-Bühne, dramatische Match-Intros und animierter Playoff-Baum.">
+<title>CIMBRIA CUP • LIVE TV</title>
+<link rel="icon" type="image/png" href="assets/zirkel-cimbria.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/tv.css?v=5-20261020">
+</head>
+<body>
+<div class="broadcast" id="tv-stage">
+  <video class="ambient-video" id="tv-background" src="assets/background-bierpong.mp4" poster="assets/background-poster.jpg" autoplay muted loop playsinline preload="auto" aria-hidden="true"></video>
+  <div class="tv-atmosphere" aria-hidden="true"></div>
+  <header class="tv-header">
+    <a href="./index.html#/home" class="tv-brand" aria-label="Zur Cimbria Cup Website">
+      <img class="tv-zirkel" src="assets/zirkel-cimbria.png" alt="">
+      <span class="tv-brand-line"></span>
+      <span class="tv-brand-name">C I M B R I A <small>BIERPONG CUP</small></span>
+    </a>
+    <div class="tv-header-mid"><span class="tv-live-dot"></span> <span>LIVE TV</span><span class="tv-mid-sep"></span><span>MEHR ALS EIN SPIEL.</span></div>
+    <div class="tv-clock-box"><span id="tv-day">CIMBRIA CUP</span><strong id="tv-clock">--:--</strong></div>
+  </header>
+  <main class="tv-content">
+    <section class="tv-center">
+      <div class="tv-kicker"><span class="red-pulse"></span> LIVE AUS DEM VERBINDUNGSHAUS <span class="tv-kicker-line"></span><span id="tv-phase">ANMELDUNG</span></div>
+      <div class="tv-main-panel">
+        <div class="tv-main-heading"><span><span class="tv-dot"></span><span id="tv-match-state">MAIN STAGE</span></span><span id="tv-match-table">BEREIT FÜR DAS TURNIER</span></div>
+        <div class="tv-main-title"><h1 id="tv-main-title">CIMBRIA <em>BEERPONG CUP</em></h1><p id="tv-main-subtitle">Legenden spielen nicht allein. Sie entstehen am Tisch.</p></div>
+        <div class="tv-versus" id="tv-versus">
+          <div class="tv-contender"><img id="tv-team-a-img" src="assets/team-icons/crown.svg" alt=""><strong id="tv-team-a">DEIN TEAM</strong><span id="tv-cups-a" class="tv-cups">—</span></div>
+          <div class="tv-versus-light">VS</div>
+          <div class="tv-contender"><img id="tv-team-b-img" src="assets/team-icons/skull.svg" alt=""><strong id="tv-team-b">DEINE GEGNER</strong><span id="tv-cups-b" class="tv-cups">—</span></div>
+        </div>
+        <div class="tv-main-footer"><span id="tv-match-context">ACHT GRUPPEN · EIN POKAL · EIN CHAMPION</span><span class="tv-red-live"><i></i> LIVE</span></div>
+      </div>
+    </section>
+    <aside class="tv-side tv-side-right">
+      <div class="tv-side-card"><div class="tv-card-title">SPIELTISCHE <span id="tv-table-count">0 AKTIV</span></div><div id="tv-tables" class="tv-tables"></div></div>
+      <div class="tv-side-card tv-side-next"><div class="tv-card-title">ALS NÄCHSTES <span>ANSTEHEND</span></div><div id="tv-upcoming" class="tv-upcoming"></div></div>
+    </aside>
+    <section class="tv-bottom">
+      <div class="tv-bottom-card tv-groups-card"><div class="tv-card-title">GRUPPENPHASE <span>AKTUELLER STAND</span></div><div id="tv-groups" class="tv-groups"></div></div>
+      <div class="tv-bottom-card tv-bracket-card"><div class="tv-card-title">ROAD TO THE FINAL <span>PLAYOFFS</span></div><div id="tv-bracket-teaser" class="tv-bracket-teaser"></div></div>
+    </section>
+  </main>
+  <footer class="tv-ticker"><span class="tv-ticker-brand">CIMBRIA <b>●</b> LIVE</span><span id="tv-ticker-message">DIE NACHT GEHÖRT DEN MUTIGEN.</span><span id="tv-counter">0 TEAMS</span></footer>
+
+  <div class="tv-scene" id="tv-scene" role="status" aria-live="polite" aria-atomic="true" aria-hidden="true">
+    <div class="scene-grain" aria-hidden="true"></div><div class="scene-rays" aria-hidden="true"></div>
+    <div class="scene-top"><img src="assets/zirkel-cimbria.png" alt=""><span>CIMBRIA BIERPONG CUP</span><span class="scene-top-right">MAIN STAGE · LIVE</span></div>
+    <div id="scene-intro" class="scene-content scene-intro">
+      <p class="scene-eyebrow">DAS NÄCHSTE DUELL BEGINNT</p>
+      <h2 class="scene-heading">THE <em>SHOWDOWN</em></h2>
+      <p id="scene-intro-context" class="scene-context">SPIELTISCH · MATCH INTRO</p>
+      <div class="scene-fighters"><div class="scene-fighter left"><img id="scene-intro-a-icon" src="assets/team-icons/crown.svg" alt=""><strong id="scene-intro-a">TEAM A</strong></div><span class="scene-vs">VS</span><div class="scene-fighter right"><img id="scene-intro-b-icon" src="assets/team-icons/skull.svg" alt=""><strong id="scene-intro-b">TEAM B</strong></div></div>
+      <div class="scene-countdown"><span>COUNTDOWN ZUM SHOWDOWN</span><strong id="scene-countdown-value">10</strong></div>
+      <div class="scene-progress"><span></span></div>
+    </div>
+    <div id="scene-winner" class="scene-content scene-win">
+      <p class="scene-eyebrow">DAS ERGEBNIS IST OFFIZIELL</p>
+      <h2 class="scene-heading">MATCH <em>WIN</em></h2>
+      <div class="win-glory"><span class="win-laurel">❧</span><img id="scene-winner-icon" src="assets/team-icons/crown.svg" alt=""><span class="win-laurel reverse">❧</span></div>
+      <h3 id="scene-winner-name">DIE SIEGER</h3>
+      <p class="scene-win-subtitle">GEWINNT DIESE BEGEGNUNG</p>
+      <p id="scene-win-context" class="scene-context">AUF DEM WEG ZUM TITEL</p>
+      <div id="scene-confetti" aria-hidden="true"></div><div class="scene-progress"><span></span></div>
+    </div>
+    <div id="scene-bracket" class="scene-content scene-bracket">
+      <p class="scene-eyebrow">DER WEG ZUM TITEL</p><h2 class="scene-heading">ROAD TO THE <em>FINAL</em></h2>
+      <div id="scene-bracket-grid" class="scene-bracket-grid"></div>
+      <div class="scene-progress"><span></span></div>
+    </div>
+    <div class="scene-bottom"><span>CIMBRIA BIERPONG CUP</span><span>LEGENDÄRE SPIELE. UNVERGESSLICHE NÄCHTE.</span></div>
+  </div>
+  <div id="tv-connection" class="tv-connection" aria-live="polite">VERBINDE ZUM TURNIER...</div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js" defer></script>
+<script src="js/tv.js?v=5-20261020" defer></script>
+</body>
+</html>
