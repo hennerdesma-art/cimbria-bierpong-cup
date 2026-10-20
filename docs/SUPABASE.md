@@ -48,13 +48,13 @@
 
 ## V5 · Public Live-TV mode and chosen team crests
 
-- \`tournaments.tv_auto_intros\`, \`tv_auto_wins\`, \`tv_rotate_bracket\` are administrator-controlled booleans (initially true).
-- \`tournaments.tv_main_match_id\` contains the selected Main Stage match (nullable FK to \`matches\`).
-- \`tv_cues\` contains read-only-public scene notifications (\`intro\`, \`winner\`, \`bracket\`, \`clear\`). Anonymous users have only SELECT when the corresponding tournament is published.
-- \`matches_emit_tv_cue\` runs after status transitions to \`live\` and \`done\` and inserts cinematic cues only for the selected Main Stage; winner cues require a confirmed winner. A cup counter reaching 0 has **no effect** on the status or winner.
-- \`public.cimbria_tv_control\` is a \`SECURITY INVOKER\` RPC with a trusted-admin check. It changes broadcast toggles, chooses Main Stage, or creates manually requested cues. Viewers cannot call this RPC.
-- \`teams.icon_id\` accepts only one of twelve built-in emblem IDs. The four-argument, service-role-only registration RPC validates and stores this icon atomically along with the team/players.
-- The deployed registration Edge Function was updated to include \`p_icon_id\`, and will reject disallowed icon IDs.
-- Realtime publication includes \`tv_cues\`. TV also polls periodically to recover from temporary disconnections.
-- The TV uses the **public** Supabase Publishable Key only. Never expose the service role credential in \`tv.js\` or the browser.
-- V5 test scenes under \`tv.html?preview=intro\`, \`?preview=winner\` and \`?preview=bracket\` use fictional data exclusively in browser memory; they do not write to Supabase.
+- `tournaments.tv_auto_intros`, `tv_auto_wins`, `tv_rotate_bracket` are administrator-controlled booleans (initially true).
+- `tournaments.tv_main_match_id` contains the selected Main Stage match (nullable FK to `matches`).
+- `tv_cues` contains read-only-public scene notifications (`intro`, `winner`, `bracket`, `clear`). Anonymous users have only SELECT when the corresponding tournament is published.
+- `matches_emit_tv_cue` runs after status transitions to `live` and `done` and inserts cinematic cues only for the selected Main Stage; winner cues require a confirmed winner. A cup counter reaching 0 has **no effect** on the status or winner.
+- `public.cimbria_tv_control` is a `SECURITY INVOKER` RPC with a trusted-admin check. It changes broadcast toggles, chooses Main Stage, or creates manually requested cues. Viewers cannot call this RPC.
+- `teams.icon_id` accepts only one of twelve built-in emblem IDs. The four-argument, service-role-only registration RPC validates and stores this icon atomically along with the team/players.
+- The deployed registration Edge Function was updated to include `p_icon_id`, and will reject disallowed icon IDs.
+- Realtime publication includes `tv_cues`. TV also polls periodically to recover from temporary disconnections.
+- The TV uses the **public** Supabase Publishable Key only. Never expose the service role credential in `tv.js` or the browser.
+- V5 test scenes under `tv.html?preview=intro`, `?preview=winner` and `?preview=bracket` use fictional data exclusively in browser memory; they do not write to Supabase.

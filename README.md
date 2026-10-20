@@ -1,52 +1,58 @@
 # CIMBRIA BIERPONG CUP
 
-Cinematic responsive tournament platform in the Cimbria colors **violet · burgundy · gold**, with the original Zirkel and background beer-pong video.
+Interaktive Turnierplattform im Cimbria-Design (Violett, Bordeaux und Gold) mit originalem Zirkel und dem bestehenden Bierpong-Hintergrundvideo.
 
-**Live website:** https://hennerdesma-art.github.io/cimbria-bierpong-cup/  
-**Public Live-TV display:** https://hennerdesma-art.github.io/cimbria-bierpong-cup/tv.html
+**Website:** https://hennerdesma-art.github.io/cimbria-bierpong-cup/
+**Live-TV:** https://hennerdesma-art.github.io/cimbria-bierpong-cup/tv.html
 
-## V5 – Live-TV and team emblems
+## V5: Live-TV und Team-Embleme
 
-- **Independent read-only TV page** at \`tv.html\`; open once on the projector or television and press F11 for fullscreen.
-- **Original video** \`assets/background-bierpong.mp4\` plays behind the TV dashboard and cinematic takeovers.
-- **Main Stage control:** admins choose the featured ready/live match in **Admin → Turnier → Live-TV & Animationen**, or from an assigned table.
-- **Automatic VS intro (10 seconds):** shown on the TV when the selected Main Stage match starts.
-- **Automatic winner cinematic (11 seconds):** shown only after the admin **manually** confirms the winner. Beaker counts do not automatically end matches.
-- **Playoff bracket cinematic:** admin-triggered at any time, and optionally rotated into the TV display while playoffs are running.
-- **Independent Admin toggles:** automatic intros, automatic winner animation and automatic bracket rotation can each be disabled without disrupting live match tracking.
-- **12 curated team emblems:** crown, skull, flame, bolt, target, rocket, shield, star, anchor, dragon, cup, phoenix. Guests pick one at registration. The approved SVG images are included under \`assets/team-icons/\` and appear in team lists, match cards, brackets and TV mode.
-- **No client secrets:** all readers use a public Supabase publishable key. RLS and protected admin RPCs enforce writes.
+- **Eigener TV-Modus:** `tv.html` einmal am Fernseher oder Beamer öffnen und mit F11 in den Vollbildmodus wechseln.
+- **Gleiches Hintergrundvideo:** `assets/background-bierpong.mp4` wird auch in der TV-Ansicht verwendet.
+- **Main Stage:** Im geschützten Admin-Bereich ein startbereites oder laufendes Spiel als Main Stage wählen.
+- **Dramatisches VS-Intro:** Beim Start dieses Spiels erscheint bei aktivierter Automatik eine etwa zehnsekündige Animation auf dem TV.
+- **Siegeranimation:** Nach der **manuellen** Siegerbestätigung erscheint bei aktivierter Automatik eine etwa elfsekündige Siegereinblendung. Das Herunterzählen der Becher allein beendet kein Spiel.
+- **Animierter Playoff-Baum:** Kann vom Admin jederzeit eingeblendet werden und während der Playoffs optional selbstständig erscheinen.
+- **Drei unabhängige Schalter:** Automatische Match-Intros, Siegeranimationen und Turnierbaum-Einblendungen lassen sich im Admin-Reiter **Turnier** ein- und ausschalten.
+- **Zwölf Team-Embleme:** Krone, Totenkopf, Flamme, Blitz, Bullseye, Rakete, Schild, Stern, Anker, Drache, Pokal und Phönix. Gäste wählen ihr Emblem bei der Anmeldung; die SVG-Grafiken erscheinen anschließend bei Teams, Begegnungen und im TV.
 
-### Try the cinematics before any real game
+## Animationen ohne echte Teams ausprobieren
 
-These isolated previews do **not** write to Supabase and use explicitly fictional teams:
-- [VS Intro](https://hennerdesma-art.github.io/cimbria-bierpong-cup/tv.html?preview=intro)
-- [Winner Animation](https://hennerdesma-art.github.io/cimbria-bierpong-cup/tv.html?preview=winner)
-- [Animated Bracket](https://hennerdesma-art.github.io/cimbria-bierpong-cup/tv.html?preview=bracket)
+Die folgenden Vorschauen verwenden nur fiktive Teams **im jeweiligen Browserfenster** und verändern keine Supabase-Daten:
 
-Open the normal \`tv.html\` for the real tournament. Leave it running on a separate screen.
+- [VS-Intro testen](https://hennerdesma-art.github.io/cimbria-bierpong-cup/tv.html?preview=intro)
+- [Siegeranimation testen](https://hennerdesma-art.github.io/cimbria-bierpong-cup/tv.html?preview=winner)
+- [Animierten Turnierbaum testen](https://hennerdesma-art.github.io/cimbria-bierpong-cup/tv.html?preview=bracket)
 
-## Other features
+## Ablauf für die Turnierleitung
 
-Guests can register teams of 2–4 members without an account. The admin dashboard supports a configurable team cap, eight groups, automatic fixtures, live cup counters (10 to 0), table assignments, results and the 16-team knockout stage. Authorized administrators sign in with email/password; trusted head admins can approve further admin email addresses. Real data stays in Supabase.
+1. Auf der Website unter `#/admin` mit dem persönlichen Admin-Konto anmelden.
+2. Unter **Turnier → Live-TV & Animationen** die drei Automatikschalter nach Wunsch einstellen.
+3. **Live-TV öffnen** klicken und den TV-Tab auf den Fernseher oder Beamer verschieben.
+4. Ein zugewiesenes Spiel als **Main Stage** auswählen.
+5. Als Admin auf **Spiel starten** klicken: Bei aktivierter Automatik erscheint das VS-Intro.
+6. Während des Spiels die Becherstände per `+`/`−` aktualisieren.
+7. Den Sieger **manuell bestätigen**: Bei aktivierter Automatik erscheint die Siegereinblendung.
 
-## Project structure
+Es gibt zusätzlich manuelle Regie-Buttons für Intro, Siegeranimation, Turnierbaum und Abbrechen.
 
-- \`index.html\`: main responsive tournament website
-- \`tv.html\`, \`css/tv.css\`, \`js/tv.js\`: independent public cinematic broadcast
-- \`js/app.js\`: tournament UI, admin controls, team icon selector
-- \`js/cloud.js\`: Supabase data adapter, including RLS-guarded TV commands
-- \`css/base.css\`, \`css/v2.css\`, \`css/cloud.css\`: existing visual system + V5 components
-- \`assets/background-bierpong.mp4\`: **same original video**, reused on both pages
-- \`assets/team-icons/*.svg\`: twelve curated built-in crest files
-- \`supabase/functions/cimbria-register-team/index.ts\`: publicly callable registration Edge Function with server-side validation
-- \`supabase/migrations/\`: SQL schema/migrations as already applied to the live database
-- \`docs/SUPABASE.md\`, \`docs/TV_MODUS.md\`: technical operation and configuration
+## Weitere Funktionen
 
-## Security and operating notes
+Öffentliche Gastanmeldungen ohne Konto (2–4 Spieler), konfigurierbare Teamobergrenze, acht Gruppen, Spiel- und Tischverwaltung, 16er-K.-o.-Baum, Live-Becherzähler und verschiedene Admin-Rollen. Alle echten Daten werden zentral in Supabase PostgreSQL gespeichert.
 
-The public TV display is read-only and does not receive participant names stored in \`players\`. Only **team names**, approved team icons, fixtures, cup counters and results are broadcast. A broadcast cue is inserted on the server **only** when an admin manually starts/completes the current Main Stage match, or deliberately sends a cue in the admin controls.
+## Projektstruktur
 
-**Automatic intro/win animations are enabled initially**, and can be turned off individually in Admin Settings. A hidden or off-screen TV tab can miss browser animations due to throttling; keep the TV screen awake. Autoplay uses muted background video (browser-compatible).
+- `index.html`, `js/app.js`, `js/cloud.js`: Hauptwebsite, Turnierlogik und Supabase-Anbindung.
+- `tv.html`, `js/tv.js`, `css/tv.css`: Eigenständiger öffentlicher Live-TV-Modus.
+- `css/base.css`, `css/v2.css`, `css/cloud.css`: Cimbria-Design und Admin-Elemente.
+- `assets/background-bierpong.mp4`: Unverändertes Video für Website und TV.
+- `assets/team-icons/`: Zwölf fest hinterlegte SVG-Embleme.
+- `supabase/functions/cimbria-register-team/index.ts`: Geschützte serverseitige Team-Registrierungslogik.
+- `supabase/migrations/`: Bereits angewendete SQL-Migrationen.
+- `docs/TV_MODUS.md`, `docs/SUPABASE.md`, `SECURITY.md`: Bedienung und technische Hinweise.
 
-**Test both the guest registration and full administrator match flow on two devices before event day.** The tournament registration itself remains closed until the admin deliberately opens it. No CAPTCHA, IP rate limiter or public guest editing link is included, as requested. Do not commit passwords, private keys or the Supabase service role token to this public repository.
+## Sicherheit und Teststatus
+
+Der TV-Modus hat nur **Leserechte** und zeigt keine privaten Spielernamen, sondern Teamnamen, Embleme und Turnierdaten. Admin-Regieaktionen sind über Supabase-RLS und serverseitige Berechtigungsprüfung abgesichert. Weder Passwörter noch der Supabase-Service-Role-Schlüssel gehören in dieses öffentliche Repository.
+
+Automatische Backend-Ereignisse sowie der Quellcode wurden geprüft. Der vollständige visuelle Test mit mehreren echten Endgeräten steht vor dem Event noch aus. Die Gastanmeldung wird nicht automatisch geöffnet. Auf CAPTCHA, IP-Rate-Limit und Gast-Bearbeitungslinks wurde wie gewünscht verzichtet.

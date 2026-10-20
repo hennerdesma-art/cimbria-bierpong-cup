@@ -1,43 +1,33 @@
-# CIMBRIA BIERPONG CUP
+# Live-TV-Modus – Cimbria Bierpong Cup
 
-Cinematic responsive tournament platform in the Cimbria colors **violet · burgundy · gold**, with the original Zirkel and background beer-pong video.
+## So öffnet sich der TV-Modus
 
-**Live website:** https://hennerdesma-art.github.io/cimbria-bierpong-cup/  
-**Public Live-TV display:** https://hennerdesma-art.github.io/cimbria-bierpong-cup/tv.html
+Unter **Admin → Turnier → Live-TV & Animationen** öffnet **Live-TV öffnen** einen eigenen Browser-Tab unter [tv.html](https://hennerdesma-art.github.io/cimbria-bierpong-cup/tv.html). Dieser Tab ist öffentlich und benötigt keine Admin-Anmeldung. Mit F11 auf dem Fernseher oder Beamer in den Vollbildmodus wechseln.
 
-## V5 – Live-TV and team emblems
+Die TV-Seite nutzt dasselbe Video `assets/background-bierpong.mp4` wie die Hauptwebsite. Sie zeigt zentral das Main-Stage-Spiel, Becherstände, aktive Tische, kommende Partien, vier Gruppentabellen und die Playoff-Übersicht.
 
-- **Independent read-only TV page** at \`tv.html\`; open once on the projector or television and press F11 for fullscreen.
-- **Original video** \`assets/background-bierpong.mp4\` plays behind the TV dashboard and cinematic takeovers.
-- **Main Stage control:** admins choose the featured ready/live match in **Admin → Turnier → Live-TV & Animationen**, or from an assigned table.
-- **Automatic VS intro (10 seconds):** shown on the TV when the selected Main Stage match starts.
-- **Automatic winner cinematic (11 seconds):** shown only after the admin **manually** confirms the winner. Beaker counts do not automatically end matches.
-- **Playoff bracket cinematic:** admin-triggered at any time, and optionally rotated into the TV display while playoffs are running.
-- **Independent Admin toggles:** automatic intros, automatic winner animation and automatic bracket rotation can each be disabled without disrupting live match tracking.
-- **12 curated team emblems:** crown, skull, flame, bolt, target, rocket, shield, star, anchor, dragon, cup, phoenix. Guests pick one at registration. The approved SVG images are included under \`assets/team-icons/\` and appear in team lists, match cards, brackets and TV mode.
-- **No client secrets:** all readers use a public Supabase publishable key. RLS and protected admin RPCs enforce writes.
+## Automatische Einblendungen
 
-### Try the cinematics before any real game
+- **Match-Intro (10 Sekunden):** Wird ausgelöst, sobald ein als Main Stage markiertes Spiel von `ready` nach `live` wechselt, sofern der Schalter **Automatische VS-Intros** aktiviert ist.
+- **Siegeranimation (11 Sekunden):** Wird ausgelöst, sobald der Admin den Sieger des Main-Stage-Spiels bestätigt und das Spiel dadurch `done` wird, sofern **Automatische Siegeranimation** aktiv ist.
+- **Turnierbaum (15 Sekunden):** Während der Playoffs kann die TV-Ansicht bei aktiviertem Schalter **Turnierbaum automatisch zeigen** zwischendurch zur animierten K.-o.-Übersicht wechseln.
 
-These isolated previews do **not** write to Supabase and use explicitly fictional teams:
-- [VS Intro](https://hennerdesma-art.github.io/cimbria-bierpong-cup/tv.html?preview=intro)
-- [Winner Animation](https://hennerdesma-art.github.io/cimbria-bierpong-cup/tv.html?preview=winner)
-- [Animated Bracket](https://hennerdesma-art.github.io/cimbria-bierpong-cup/tv.html?preview=bracket)
+Die Becherwerte sind dabei **keine** automatische Ergebnisentscheidung. Nur die explizite Siegerbestätigung im Admin-Dashboard schließt eine Partie ab.
 
-Open the normal \`tv.html\` for the real tournament. Leave it running on a separate screen.
+## Manuelle Regie
 
+Die Turnierleitung kann in demselben Admin-Abschnitt die Main Stage festlegen, ein VS-Intro oder die bereits bestätigte Siegeranimation direkt senden, den Turnierbaum einblenden oder eine laufende Einblendung beenden. Nur Hauptadmins/Turnieradmins mit freigeschalteter Supabase-Identität dürfen dies.
 
-## Technische Ablaufsteuerung
-1. Website auf dem Admin-PC öffnen und anmelden.
-2. Unter **Admin → Turnier** auf **Live-TV öffnen** klicken und den neuen Tab am Fernseher in den Vollbildmodus setzen.
-3. Eines der bereitgestellten Spiele als **Main Stage** auswählen.
-4. Bei aktiviertem Auto-Intro löst **Spiel starten** serverseitig eine VS-Animation aus. Der TV wechselt danach zurück zur Übersicht.
-5. Admins aktualisieren während des Spiels den Becherstand. Das ist **kein** Sieg-Ereignis.
-6. Erst **Sieger bestätigen** setzt das Ergebnis und löst bei aktiviertem Sieger-Effekt die goldene Siegeranimation aus.
-7. In den Playoffs lässt sich der Turnierbaum manuell senden oder automatisch zwischendurch einblenden.
+## Gefahrlos ausprobieren
 
-## Verproben
-Öffne eine der drei Vorschauadressen aus der README. Testdaten existieren nur in diesem einen TV-Browserfenster und werden nicht in Supabase geschrieben. Bei einem echten TV-Betrieb ohne Preview-Parameter liest die Seite ausschließlich den Live-Stand.
+Die drei Vorschau-Links enthalten fiktive Namen und Embleme ausschließlich im aktuellen TV-Fenster. Sie verändern **keine** Teams oder Ergebnisse:
 
-## Performance
-Die Regie nutzt Realtime plus periodische Aktualisierung. Animationen sind absichtlich auf etwa 10–16 Sekunden begrenzt. Vollbildmodus aktivieren (F11) und Energiesparen/Display-Standby vor dem Event deaktivieren.
+- [Intro](https://hennerdesma-art.github.io/cimbria-bierpong-cup/tv.html?preview=intro)
+- [Sieg](https://hennerdesma-art.github.io/cimbria-bierpong-cup/tv.html?preview=winner)
+- [Turnierbaum](https://hennerdesma-art.github.io/cimbria-bierpong-cup/tv.html?preview=bracket)
+
+## Technik und Hinweise
+
+Supabase `tv_cues` veröffentlicht die Regie-Ereignisse über Realtime; ein periodischer Abruf dient als Fallback. Der TV-Client besitzt **nur** einen öffentlichen Publishable Key. In einem ruhenden Browser-Tab oder bei aktivem Energiesparen können Animationen verzögert oder übersprungen werden. Das TV-Fenster vor dem Turnier auf dem tatsächlichen Ausgabegerät testen und Standby deaktivieren.
+
+Das TV-Modul verwendet das unveränderte bestehende Video; es braucht keine zusätzliche Server- oder Hosting-Konfiguration außer der vorhandenen GitHub-Pages-Veröffentlichung.
