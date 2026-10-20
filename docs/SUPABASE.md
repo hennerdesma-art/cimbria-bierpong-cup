@@ -67,3 +67,17 @@
 - Beim Auslosen speichert `cimbria_admin_save_state` die passenden Werte in `group_count` und `playoff_teams` atomar. Die Datenbank überprüft Mindestanzahl, Gruppenbelegung und die richtige Anzahl der Playoff-Spiele.
 - Die Hauptwebsite zeigt ausschließlich ausgeloste Gruppen. Der Turnierbaum blendet im 8er-Modus das Achtelfinale aus, ebenso die TV-Ansicht.
 - Die aktuellen Registrierungen und Turnierergebnisse wurden durch diese Migration **nicht** zurückgesetzt oder verändert. Die Auslosung wird nicht automatisch gestartet.
+
+
+## V6: Sicheres Zurücksetzen des gesamten Turniers
+
+- Der neue Bereich **Admin → Turnier → Turnier zurücksetzen** ist ausschließlich für bestätigte **Hauptadmins** sichtbar. Die Datenbank überprüft zusätzlich die aktive Hauptadmin-Rolle und die gültige E-Mail-Freigabe.
+- Optional lässt sich vorab eine lokale **JSON-Sicherung** mit Teams, Spielern, Gruppen, Spielen, Tischkonfiguration und zuletzt sichtbaren Änderungen herunterladen. Achtung: persönliche Spielernamen vertraulich aufbewahren.
+- Ein Reset erfordert die exakt eingetippte Bestätigung `CIMBRIA RESET`, ein Bestätigungs-Häkchen und eine weitere Browser-Sicherheitsfrage.
+- Die RPC `public.cimbria_reset_tournament(p_slug,p_expected_revision,p_confirmation)` überprüft den aktuellen Revisionsstand und führt den Reset vollständig **transaktional** aus. Veraltete Browserstände werden zurückgewiesen.
+- **Automatisches vollständiges Archiv vor dem Löschen:** `cimbria_private.tournament_reset_backups` speichert den Originalturnierstand mit allen Mannschaften, Spielern, Gruppenzuordnungen, Spielen, Ergebnissen, TV-Cues und Audit-Einträgen. Der Backup-Tabelle werden keine Rechte für `anon` und `authenticated` gewährt. Für eine Wiederherstellung wäre ein Datenbankadministrator und ein separater Restore-Prozess nötig; eine Ein-Klick-Wiederherstellung existiert nicht.
+- Gelöscht werden aus dem *aktiven* Turnier: alle Teams, Spieler, Gruppenzuordnungen, Gruppenspiele, Entscheidungsrunden, Playoff-Spiele, Becherstände, Ergebnisse, TV-Ereignisse sowie frühere Audit-Einträge. Nach dem Reset bleibt eine neue Audit-Aktion zurück.
+- **Nicht gelöscht:** Supabase-Auth-Benutzer, Admin-Freigaben, Admin-Passwörter, Tischkonfigurationen, die acht Gruppen-Stammdaten, Teamobergrenze und allgemeine TV-Einstellungen.
+- Das Turnier wechselt in die Phase `registration`, mit `registration_open=false` und `tv_main_match_id=null`. Die öffentliche Website bleibt erreichbar; die Teamanmeldung muss der Admin selbst öffnen.
+- **Migrationen installieren oder Code deployen löst niemals einen Reset aus.** Nur der explizite bestätigte Admin-Aufruf führt ihn aus.
+- Der Reset wurde an einer künstlichen Testturnierkopie innerhalb `BEGIN ... ROLLBACK` überprüft; die realen Teilnehmer wurden dabei nicht verändert.

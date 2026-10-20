@@ -70,6 +70,7 @@
     crown:'<path d="M2 8 7 13l5-9 5 9 5-5-2 12H4L2 8Zm2 15h16"/>',
     grid:'<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>',
     radio:'<path d="M5 16a8 8 0 0 1 0-8m4 4a3 3 0 1 1 6 0m4-4a8 8 0 0 1 0 8"/><circle cx="12" cy="12" r="1"/>',
+    download:'<path d="M12 3v12m-5-5 5 5 5-5M4 17v4h16v-4"/>',
     mail:'<rect x="2" y="5" width="20" height="14" rx="2"/><path d="m3 7 9 7 9-7"/>'
   };
 
@@ -124,6 +125,7 @@
   let ui = {
     page: 'home', mobileMenu:false, adminTab:'tables', liveFilter:'all', liveGroup:'A',
     saving:false, cloudLoading:true, authSent:false, authEmail:'Henner@desma.africa',signupOpen:false,adminMembers:[],
+    resetDialogOpen:false,resetExpectedRevision:null,resetConfirmText:'',
     liveSearch:'', liveExpanded:false, teamSearch:'', selections:{}, registration:{teamName:'',players:['',''],iconId:'crown'}, toast:null
   };
   function persist(){ /* Live state is persisted in Supabase, never in localStorage. */ }
@@ -471,6 +473,36 @@
     logAction(`Tisch umbenannt in ${cleaned}.`);
     commit('Tisch erfolgreich umbenannt.');
   }
+  function downloadTournamentBackup(){
+    if(!CLOUD.isAdmin||!CLOUD.canManageMembers||!CLOUD.current)return;
+    try{
+      const current=CLOUD.current;
+      const backup={
+        format:'cimbria-cup-local-backup-v1',
+        exportedAt:new Date().toISOString(),
+        notice:'Vertraulich: enthält Spielernamen. Das automatische vollständige Archiv liegt zusätzlich in Supabase.',
+        tournament:{
+          phase:current.phase,registrationOpen:current.registrationOpen,
+          isPublished:current.isPublished,revision:current.revision,
+          minTeams:current.minTeams,maxTeams:current.maxTeams,
+          groupCount:current.groupCount,playoffTeams:current.playoffTeams,
+          tvAutoIntros:current.tvAutoIntros,tvAutoWins:current.tvAutoWins,
+          tvRotateBracket:current.tvRotateBracket
+        },
+        teams:current.teams,groups:current.groups,matches:current.matches,
+        playoffMatches:current.playoffMatches,tables:current.tables,
+        recentLog:current.log
+      };
+      const json=JSON.stringify(backup,null,2);
+      const url=URL.createObjectURL(new Blob([json],{type:'application/json;charset=utf-8'}));
+      const link=document.createElement('a');
+      link.href=url;
+      link.download='Cimbria_Cup_Backup_'+new Date().toISOString().slice(0,10)+'.json';
+      document.body.appendChild(link);link.click();link.remove();
+      setTimeout(()=>URL.revokeObjectURL(url),5000);
+      notify('Sicherung heruntergeladen. Die Datei enthält vertrauliche Spielernamen.');
+    }catch(e){notify('Sicherung konnte nicht heruntergeladen werden: '+e.message,true);}
+  }
   function resetDemo(){
     if(CLOUD){notify('Ein Zurücksetzen des Online-Turniers ist deaktiviert.',true);return;}
     if(!window.confirm('Alle lokalen Änderungen einschließlich Anmeldungen, Ergebnissen und Tischen löschen und die 24 Demo-Teams wiederherstellen?'))return;
@@ -800,7 +832,51 @@
 <button class="btn btn-outline" type="submit" ${state.phase!=='registration'||ui.saving?'disabled':''}>Teamlimit speichern</button>
 </form><div class="subtle-frame" style="margin-top:14px"><h3 class="serif" style="font-size:22px;margin:0 0 8px">Öffentliche Teamanmeldung</h3>
        <p class="muted text-sm">Anmeldungen sind ${state.registrationOpen?'geöffnet':'geschlossen'}. Gäste benötigen kein Benutzerkonto.</p>
-       <button class="btn btn-outline" data-action="toggle-registration" ${state.phase!=='registration'||ui.saving?'disabled':''}>${icon(state.registrationOpen?'lock':'users')} ${state.registrationOpen?'Anmeldung schließen':'Anmeldung öffnen'}</button></div>`;
+       <button class="btn btn-outline" data-action="toggle-registration" ${state.phase!=='registration'||ui.saving?'disabled':''}>${icon(state.registrationOpen?'lock':'users')} ${state.registrationOpen?'Anmeldung schließen':'Anmeldung öffnen'}</button></div>
+      ${CLOUD.canManageMembers?`
+      <section class="cim-reset-zone" aria-labelledby="cim-reset-title">
+        <div class="cim-reset-heading"><span class="cim-reset-emblem">${icon('shield')}</span>
+          <div><div class="panel-caption">HAUPTADMIN · SICHERHEIT</div>
+            <h3 id="cim-reset-title" class="serif">Turnier zurücksetzen</h3>
+            <p>Alle Anmeldungen und Turnierergebnisse entfernen, um mit einem leeren Turnier neu zu beginnen.</p>
+          </div>
+        </div>
+        <div class="cim-reset-overview">
+          <div><strong>${state.teams.length}</strong><span>Teams</span></div>
+          <div><strong>${state.teams.reduce((n,t)=>n+(t.players?.length||0),0)}</strong><span>Spieler</span></div>
+          <div><strong>${allMatches().length}</strong><span>Spiele</span></div>
+          <div><strong>${state.groups.length}</strong><span>Gruppen belegt</span></div>
+        </div>
+        <p class="cim-reset-warning">${icon('info')} <span>Entfernt werden Team-Anmeldungen, Spieler, Gruppenzuordnungen, Begegnungen, Ergebnisse, Becherstände, TV-Ereignisse und das bisherige Turnierprotokoll.
+          <b>Erhalten bleiben</b> Admin-Konten, Spieltische, Embleme, Website-Design und Einstellungen. Die Anmeldung ist anschließend zunächst geschlossen.</span></p>
+        <p class="cim-reset-archive-note">${icon('shield')} Vor dem Löschen erstellt Supabase automatisch ein vollständiges, nicht öffentliches Datenbankarchiv.</p>
+        <div class="cim-reset-actions">
+          <button type="button" class="btn btn-outline btn-sm" data-action="reset-download" ${ui.saving?'disabled':''}>${icon('download')} JSON-Sicherung herunterladen</button>
+          <button type="button" class="btn btn-danger btn-sm" data-action="reset-open" ${ui.saving?'disabled':''}>${icon('close')} Gesamtes Turnier zurücksetzen</button>
+        </div>
+        <p class="muted text-xs">Die heruntergeladene Sicherung enthält Spielernamen. Bitte vertraulich aufbewahren; das private Datenbankarchiv ist unabhängig davon.</p>
+      </section>
+      ${ui.resetDialogOpen?`
+      <div class="cim-reset-shade"><div class="cim-reset-dialog" role="dialog" aria-modal="true" aria-labelledby="cim-reset-dialog-title" aria-describedby="cim-reset-dialog-desc">
+        <div class="cim-reset-dialog-icon">${icon('info')}</div>
+        <div class="panel-caption">ENDGÜLTIGE BESTÄTIGUNG</div>
+        <h3 id="cim-reset-dialog-title" class="serif">Wirklich alles zurücksetzen?</h3>
+        <p id="cim-reset-dialog-desc">Du setzt den Cup auf die Anmeldephase zurück und entfernst <b>${state.teams.length} Teamanmeldungen</b> sowie
+          <b>${allMatches().length} Spiele</b>. Die bisherige Historie wird in Supabase privat archiviert, aber eine Wiederherstellung
+          benötigt einen Datenbankadministrator.</p>
+        <form id="cimbria-reset-form">
+          <label for="cimbria-reset-confirm">Bitte <strong>CIMBRIA RESET</strong> exakt eintippen</label>
+          <input id="cimbria-reset-confirm" name="confirmation" type="text" autocomplete="off" autocapitalize="off" spellcheck="false"
+            placeholder="CIMBRIA RESET" value="${escape(ui.resetConfirmText)}" required>
+          <label class="cim-reset-check"><input type="checkbox" name="ack" required>
+            <span>Ich verstehe, dass die aktuellen Teamanmeldungen, Spielpläne und Ergebnisse aus der aktiven Ansicht gelöscht werden.</span></label>
+          <div class="cim-reset-dialog-actions">
+            <button type="button" class="btn btn-outline" data-action="reset-cancel">Abbrechen</button>
+            <button type="submit" class="btn btn-danger" ${ui.saving?'disabled':''}>Jetzt vollständig zurücksetzen</button>
+          </div>
+        </form>
+      </div></div>`:''}
+      `:''}`;
   }
   function renderAdmin(){
     if (!CLOUD.isAdmin) {
@@ -892,6 +968,19 @@ ${ui.signupOpen?`<form id="admin-signup" class="subtle-frame">
         state.registrationOpen=!state.registrationOpen;
         commit(state.registrationOpen?'Anmeldung ist geöffnet.':'Anmeldung wurde geschlossen.');
         break;
+      case 'reset-download':
+        if(CLOUD.canManageMembers)downloadTournamentBackup();
+        break;
+      case 'reset-open':
+        if(!CLOUD.canManageMembers)break;
+        ui.resetExpectedRevision=CLOUD.current?.revision;
+        ui.resetConfirmText='';
+        ui.resetDialogOpen=true;render();
+        document.getElementById('cimbria-reset-confirm')?.focus();
+        break;
+      case 'reset-cancel':
+        ui.resetDialogOpen=false;ui.resetConfirmText='';ui.resetExpectedRevision=null;render();
+        break;
       case 'admin-logout':
         ui.saving=true;
         CLOUD.logout().then(()=>{ui.saving=false;notify('Abgemeldet.');})
@@ -962,6 +1051,7 @@ ui.saving=true;CLOUD.changeMember('remove',btn.dataset.email).then(m=>{ui.adminM
   });
   document.addEventListener('input',event=>{
     const target=event.target;
+    if(target.id==='cimbria-reset-confirm'){ui.resetConfirmText=target.value;return;}
     if(target.dataset.draft==='name'){ui.registration.teamName=target.value;return;}
     if(target.dataset.player!==undefined){ui.registration.players[Number(target.dataset.player)]=target.value;return;}
     if(target.id==='team-search'){
@@ -980,6 +1070,36 @@ ui.saving=true;CLOUD.changeMember('remove',btn.dataset.email).then(m=>{ui.adminM
     if(tableId)ui.selections[tableId]=event.target.value;
   });
   document.addEventListener('submit',event=>{
+    if(event.target.id==='cimbria-reset-form'){
+      event.preventDefault();
+      if(ui.saving||!CLOUD.canManageMembers||!ui.resetDialogOpen)return;
+      const form=event.target;
+      const confirmation=form.elements.confirmation.value.trim();
+      if(confirmation!=='CIMBRIA RESET'||!form.elements.ack.checked){
+        notify('Bitte die Sicherheitsbestätigung CIMBRIA RESET eingeben und das Kästchen aktivieren.',true);
+        return;
+      }
+      const expected=ui.resetExpectedRevision;
+      if(!Number.isSafeInteger(expected)){
+        notify('Turnierstand nicht aktuell. Bitte neu laden.',true);
+        return;
+      }
+      if(!window.confirm('Letzte Sicherheitsfrage: Alle aktuellen Teams und Ergebnisse zurücksetzen? Die Anmeldung ist anschließend geschlossen.'))return;
+      ui.saving=true;ui.resetDialogOpen=false;ui.resetConfirmText='';render();
+      CLOUD.resetTournament(confirmation,expected).then(result=>{
+        ui.saving=false;
+        ui.resetExpectedRevision=null;
+        ui.selections={};ui.liveFilter='all';ui.liveGroup='A';ui.liveSearch='';
+        ui.registration={teamName:'',players:['',''],iconId:'crown'};
+        notify('Turnier zurückgesetzt: '+result.deleted.teams+' Teams und '+result.deleted.matches+
+          ' Spiele entfernt. Die Supabase-Sicherung wurde erstellt. Öffne die Anmeldung bei Bedarf manuell.');
+      }).catch(async err=>{
+        ui.saving=false;ui.resetExpectedRevision=null;
+        try{state=await CLOUD.reload();}catch(loadErr){console.warn(loadErr);}
+        notify('Zurücksetzen nicht ausgeführt: '+err.message,true);
+      });
+      return;
+    }
     if(event.target.id==='cim-tv-main'){
       event.preventDefault();
       if(ui.saving||!CLOUD.isAdmin)return;

@@ -59,3 +59,12 @@ Automatische Backend-Ereignisse sowie der Quellcode wurden geprüft. Der vollst�
 ## Start ab 12 Mannschaften
 
 Bei 12–15 Teams spielt der Cup in **vier Gruppen (A–D)** und danach im **8er-Viertelfinale**. Ab 16 Teams werden **acht Gruppen (A–H)** und ein **16er-Achtelfinale** ausgelost. Jeweils die ersten zwei Mannschaften jeder Gruppe qualifizieren sich. Die maximale Teilnehmerzahl ist im Admin-Bereich auf 12–512 einstellbar. Die Auslosung und Schließung der Anmeldung erfolgen erst nach bewusster Bestätigung des Admins.
+
+
+## Turnier vollständig zurücksetzen (Hauptadmin)
+
+Unter **Admin → Turnier → Turnier zurücksetzen** gibt es einen gesonderten Sicherheitsbereich. Die Leitung kann zunächst eine lokale JSON-Sicherung herunterladen. Nach Eingabe von `CIMBRIA RESET`, Bestätigung per Checkbox und einer zweiten Warnung werden Teamanmeldungen, Spielerlisten, Gruppenzuordnungen, Spiele, Ergebnisse und alte TV-Einblendungen aus dem aktuellen Turnier gelöscht.
+
+**Supabase archiviert den vollständigen bisherigen Turnierstand automatisch vor jeder Löschung in einer privaten Tabelle.** Das Turnier kehrt anschließend zur Anmeldephase zurück; die Registrierung bleibt zunächst geschlossen. Admin-Zugänge und eingerichtete Spieltische bleiben bestehen. Eine Rücksicherung des privaten Archivs müsste ein Datenbankadministrator durchführen.
+
+**Nur Hauptadmins dürfen zurücksetzen.** Ein normales Mitglied oder ein Turnieradmin mit der Rolle Supervisor hat weder den Menüpunkt noch die serverseitige Berechtigung. Das Bereitstellen neuer Website-Dateien setzt das Turnier **nicht** zurück.

@@ -259,6 +259,28 @@
     await reload();
     return r.data;
   }
+  async function resetTournament(confirmation,expectedRevision) {
+    if (!authorized || !canManageMembers)
+      throw new Error("Nur Hauptadmins dürfen das Turnier zurücksetzen.");
+    if (busy) throw new Error("Bitte auf die laufende Datenbankänderung warten.");
+    if (confirmation !== "CIMBRIA RESET")
+      throw new Error("Die Sicherheitsbestätigung ist ungültig.");
+    if (!Number.isSafeInteger(expectedRevision) || expectedRevision < 0)
+      throw new Error("Bitte den aktuellen Turnierstand neu laden.");
+    busy = true;
+    try {
+      const response = assert(await client.rpc("cimbria_reset_tournament",{
+        p_slug: SLUG,
+        p_expected_revision: expectedRevision,
+        p_confirmation: confirmation,
+      }));
+      if (!response?.success)
+        throw new Error("Das Zurücksetzen wurde von Supabase nicht bestätigt.");
+      revision = Number(response.new_revision);
+      await reload();
+      return response;
+    } finally { busy = false; }
+  }
   async function logout() {
     const r = await client.auth.signOut();
     if (r.error) throw r.error;
@@ -267,7 +289,7 @@
     return await reload();
   }
   window.CimbriaCloud = {
-    initialize, reload, save, guestRegister, signInAdmin, logout,setTeamLimit,updateCups,getMembers,changeMember,registerInvitedAdmin,tvControl,
+    initialize, reload, save, guestRegister, signInAdmin, logout,setTeamLimit,updateCups,getMembers,changeMember,registerInvitedAdmin,tvControl,resetTournament,
     get isAdmin() { return authorized; },
     get canManageMembers() { return canManageMembers; },
     get email() { return authEmail; },
