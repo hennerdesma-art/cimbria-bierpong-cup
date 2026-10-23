@@ -39,3 +39,15 @@ In **Admin → Turnier → Live-TV & Animationen → Jetzt auf dem TV anzeigen**
 **Wichtig:** Im Gegensatz zu Intros läuft die Regelszene **nicht automatisch ab**. Sie bleibt so lange stehen, bis ein Admin **Einblendung beenden** wählt oder eine andere TV-Szene sendet. Der Spielstand wird dabei nicht verändert, und das Hintergrundvideo bleibt vorhanden.
 
 Eine datenneutrale Vorschau ist unter `tv.html?preview=rules` erreichbar. Die offizielle Regelseite liegt unter `regeln.html`, das A4-PDF unter `assets/Cimbria_Bierpong_Cup_Spielregeln.pdf`.
+
+
+## Stabilität der Live-Animationen (V8)
+
+- Die Datenbank erzeugte weiterhin gültige automatische `intro`- und `winner`-Einträge, auch als die TV-Einblendungen ausblieben. `tv_cues` ist über Realtime publiziert, und Gäste (`anon`) dürfen veröffentlichte Turnier-Cues lesen.
+- Ursachenanalyse im TV-Client: zu strikte Freshness-Prüfung anhand der lokalen Geräte-Uhr (`created_at` + Dauer + 3 s), nur 12-s-Fallback für das vollständige Scoreboard sowie fehlende Live-Rückkehr bei einem `?preview=`-Tab.
+- Bei Erstladung zeigt das TV nur gerade aktuelle Intros oder dauerhaft aktive `rules`; es spielt nicht die ganze alte Cue-Historie ab.
+- Während des Live-Betriebs verarbeitet der Client jede höhere Cue-ID auch dann, wenn sie verzögert eingetroffen ist. Das verhindert Ausfälle durch unzuverlässiges Websocket oder abweichende lokale Geräte-Uhr.
+- Zusätzliche schlanke Datenbankabfrage ausschließlich auf `tv_cues` alle 2,5 s; aktive Echtzeitverbindung bleibt erhalten. Refresh-Events, die während eines laufenden Refresh eingehen, lösen einen Folge-Refresh aus.
+- Fehlende Match-Daten beim Eingang eines Intros führen zu einem neuen Reload statt zum Verwerfen des Ereignisses.
+- Match-/Sieger-Vorschauen gehen nach dem Ablauf automatisch zurück zum echten Live-Betrieb. Die statische Regeln-Vorschau ist separat gekennzeichnet und bietet einen Link zum echten TV.
+- Regressionstest: `tests/tv-cue-delivery.test.cjs`. Die Änderung erfordert keine Datenbankmigration und ändert keine bereits gespeicherten Ergebnisse.

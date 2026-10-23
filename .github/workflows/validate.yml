@@ -1,7 +1,7 @@
 name: Validate Cimbria Website
 on:
   push:
-    branches: [main, feat/supabase-auth-live, feat/admin-password-login, feat/cup-score-admin-team-limit, feat/v5-cinematic-tv-emblems, feat/start-from-12-teams, feat/admin-tournament-reset, feat/spielregeln-web-pdf-tv]
+    branches: [main, feat/supabase-auth-live, feat/admin-password-login, feat/cup-score-admin-team-limit, feat/v5-cinematic-tv-emblems, feat/start-from-12-teams, feat/admin-tournament-reset, feat/spielregeln-web-pdf-tv, fix/live-tv-animation-delivery]
   pull_request:
     branches: [main]
 permissions:
@@ -103,3 +103,7 @@ jobs:
           assert(fs.existsSync('supabase/migrations/20261023162839_cimbria_tv_show_official_rules_on_demand.sql'));
           console.log('Rules web page, PDF download and TV controls: valid.');
           NODE
+
+      - name: Test TV cue delivery and preview recovery
+        run: |
+          node tests/tv-cue-delivery.test.cjs

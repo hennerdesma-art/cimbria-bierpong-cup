@@ -77,3 +77,12 @@ Die acht verbindlichen Cimbria-Regeln findest du auf **Infos → FAQs → Spielr
 Für strittige Spielsituationen befindet sich unter **Admin → Turnier → Live-TV & Animationen → Jetzt auf dem TV anzeigen** der Button **Spielregeln auf TV anzeigen**. Dadurch wird die Regelseite als gut lesbare Vollbild-Einblendung auf dem separat geöffneten TV sichtbar. Sie **bleibt stehen**, bis ein Admin **Einblendung beenden** drückt oder eine neue manuelle/automatische Sendung sie ersetzt. Test ohne Datenänderung: [TV-Regel-Vorschau](https://hennerdesma-art.github.io/cimbria-bierpong-cup/tv.html?preview=rules).
 
 **Regelinhalt:** Ellenbogen hinter Tape, einmal Becher umstellen, zwei Würfe pro Runde unabhängig von der Teamgröße, Bombe (alle berührenden Becher), Balls Back bei zwei Treffern, Trickshots nach Rückrollen über die Tischmitte und Zurückholen auf dem Tisch, Aufsetzer zählen zwei Becher, kein Blasen/Fingern/Island. Nur die explizit genannten Regeln gelten; Streitfälle gehen an das Organisationsteam.
+
+
+## Live-TV-Signalzuverlässigkeit (Oktober 2026)
+
+Bei zeitweise schwachem WLAN konnten bisher VS-Intros und Siegeranimationen ausbleiben, obwohl die Main Stage weiter aktualisiert wurde. Ursache: Der TV-Client verwarf Regie-Cues bei mehr als ca. 13–14 Sekunden Verzögerung, obwohl die Spiellisten nur alle 12 Sekunden abgefragt wurden. Außerdem ignorierte ein TV-Tab mit `?preview=intro`, `?preview=winner` oder `?preview=bracket` nach Ende der Vorschau dauerhaft alle Live-Cues.
+
+Die korrigierte V8 fragt `tv_cues` unabhängig vom Spielstand alle **2,5 Sekunden** ab, verarbeitet nach Start jede **neue Cue-ID** unabhängig von Gerätedatumsabweichungen und verliert parallele Realtime-Benachrichtigungen bei einem gerade laufenden Reload nicht mehr. Eine einmalige Vorschau wechselt nach ihrer Animation automatisch zum regulären Live-TV; eine dauerhafte Regel-Vorschau hat einen deutlichen Link **Echten Live-TV-Modus öffnen**.
+
+Ein TV-Tab sollte als dauerhafter Bühnenbildschirm die Adresse `/tv.html` **ohne `?preview=`** verwenden. Nach Updates den Tab einmal neu laden; die Referenzen verwenden einen Cache-Buster.

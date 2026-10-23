@@ -15,7 +15,7 @@ function matchRound(m){return m.stage==="group"?"GRUPPE "+(state.groupById[m.gro
 function setText(id,val){var e=$(id);if(e)e.textContent=val==null?"":String(val);}
 function nowDate(){var d=new Date();setText("tv-clock",new Intl.DateTimeFormat("de-DE",{hour:"2-digit",minute:"2-digit"}).format(d));setText("tv-day",new Intl.DateTimeFormat("de-DE",{weekday:"short",day:"2-digit",month:"short"}).format(d).toUpperCase());}
 var state={t:null,teams:[],matches:[],tables:[],groups:[],members:[],groupById:{},teamsById:{},tablesById:{}};
-var client=null,channel=null,fetching=false,refreshSoon=null,sceneTimer=null,introClockTimer=null,lastSceneTime=Date.now(),lastCueId=0,started=false,sceneActive=false;
+var client=null,channel=null,fetching=false,refreshAgain=false,refreshSoon=null,sceneTimer=null,introClockTimer=null,lastSceneTime=Date.now(),lastCueId=0,cueInitialized=false,cueFetching=false,started=false,sceneActive=false;
 var connection=$("tv-connection");
 var previewKind=new URLSearchParams(window.location.search).get("preview");
 var previewDone=false;
@@ -172,6 +172,18 @@ function closeScene(){
  introClockTimer=null;
  sceneTimer=null;sceneActive=false;
  var root=$("tv-scene");root.classList.remove("on");root.setAttribute("aria-hidden","true");root.removeAttribute("data-kind");
+ // Demo links must never trap a TV in a mode that ignores all future live cues.
+ if(previewKind&&previewDone&&previewKind!=="rules"){
+   previewKind=null;
+   var previewBanner=$("tv-preview-alert");
+   if(previewBanner)previewBanner.hidden=true;
+   try {
+     var url=new URL(window.location.href);
+     url.searchParams.delete("preview");
+     window.history.replaceState(null,"",url.pathname+url.search+url.hash);
+   }catch(e){console.warn("Vorschau-URL:",e);}
+   queueRefresh();
+ }
 }
 function showScene(kind,match,duration){
  if(kind==="clear"){closeScene();return;}
@@ -211,24 +223,56 @@ function showScene(kind,match,duration){
  lastSceneTime=Date.now();sceneActive=true;
  if(kind!=="rules")sceneTimer=setTimeout(closeScene,duration);
 }
+// Initial load: do not replay very old match introductions. Live operation:
+// always honor unseen cue IDs, regardless of client clock drift or slow polling.
+function shouldApplyCue(cue,seenId,alreadyInitialized){
+ if(!cue||cue.id<=seenId)return false;
+ if(alreadyInitialized)return true;
+ if(cue.kind==="rules")return true; // A rules dispute display survives TV reloads.
+ if(cue.kind==="clear")return false;
+ var created=Date.parse(cue.created_at);
+ if(!Number.isFinite(created))return false;
+ var age=Date.now()-created;
+ return age>=-15000&&age<=45000;
+}
 function showCue(cue){
- if(!cue||cue.id<=lastCueId)return;
- lastCueId=cue.id;
- var age=Date.now()-Date.parse(cue.created_at);
- // Rule display remains until explicitly cleared, even across a TV refresh.
- if(cue.kind!=="rules"&&(age<0||age>Math.max(3500,cue.duration_ms+3000)))return;
+ if(!cue||cue.id<=lastCueId)return false;
  var match=state.matches.find(function(m){return m.id===cue.match_id;})||null;
+ if((cue.kind==="intro"||cue.kind==="winner")&&!match){
+   // The match update and the cue can arrive in the opposite order.
+   queueRefresh();
+   return false;
+ }
+ lastCueId=cue.id;
  showScene(cue.kind,match,cue.duration_ms);
+ return true;
 }
 async function checkCue(){
- if(!state.t||!client)return;
- var r=await client.from("tv_cues").select("id,kind,match_id,duration_ms,created_at")
-   .eq("tournament_id",state.t.id).order("id",{ascending:false}).limit(1);
- if(r.error)throw r.error;
- if(r.data&&r.data[0])showCue(r.data[0]);
+ if(!state.t||!client||cueFetching||previewKind)return;
+ cueFetching=true;
+ try{
+   var r=await client.from("tv_cues").select("id,kind,match_id,duration_ms,created_at")
+     .eq("tournament_id",state.t.id).order("id",{ascending:false}).limit(1);
+   if(r.error)throw r.error;
+   var cue=r.data&&r.data[0]||null;
+   var wasInitialized=cueInitialized;
+   cueInitialized=true;
+   if(!cue)return;
+   if(shouldApplyCue(cue,lastCueId,wasInitialized)){
+     showCue(cue);
+   }else if(!wasInitialized){
+     // Ignore stale history on startup but handle every subsequently observed ID.
+     lastCueId=cue.id;
+   }
+ }catch(err){
+   console.warn("TV-Regie-Signale:",err);
+ }finally{
+   cueFetching=false;
+ }
 }
 async function refresh(){
- if(fetching||!client)return;
+ if(!client)return;
+ if(fetching){refreshAgain=true;return;}
  fetching=true;
  try {
    var tr=await client.from("tournaments").select(
@@ -258,7 +302,13 @@ async function refresh(){
  }catch(err){
    console.warn("TV-Synchronisation:",err);
    connectionStatus("VERBINDUNG UNTERBROCHEN – ERNEUTER VERSUCH",true);
- }finally{fetching=false;}
+ }finally{
+   fetching=false;
+   if(refreshAgain){
+     refreshAgain=false;
+     queueRefresh();
+   }
+ }
 }
 function queueRefresh(){
  if(refreshSoon)clearTimeout(refreshSoon);
@@ -266,12 +316,21 @@ function queueRefresh(){
 }
 function subscribe(){
  if(channel){client.removeChannel(channel);channel=null;}
- var tables=["tournaments","matches","teams","game_tables","groups","group_members","tv_cues"];
+ var tables=["tournaments","matches","teams","game_tables","groups","group_members"];
  channel=client.channel("cimbria-tv-live");
  tables.forEach(function(table){
-  channel.on("postgres_changes",{event:"*",schema:"public",table:table},queueRefresh);
+   channel.on("postgres_changes",{event:"*",schema:"public",table:table},queueRefresh);
  });
- channel.subscribe();
+ channel.on("postgres_changes",{event:"INSERT",schema:"public",table:"tv_cues"},function(){
+   // A dedicated cue poll is faster than fetching the entire scoreboard first.
+   if(!previewKind)void checkCue();
+   queueRefresh();
+ });
+ channel.subscribe(function(status){
+   if(status==="CHANNEL_ERROR"||status==="TIMED_OUT"){
+     console.warn("TV-Realtime:",status,"– TV-Cue-Polling bleibt aktiv");
+   }
+ });
 }
 function renderConfetti(){
  var el=$("scene-confetti");var colors=["#ffe3a4","#e4b66a","#f06a85","#fff2d7","#aa5bb5"];
@@ -297,6 +356,8 @@ function start(){
  });
  nowDate();setInterval(nowDate,20000);
  renderConfetti();
+ var previewBanner=$("tv-preview-alert");
+ if(previewBanner)previewBanner.hidden=!previewKind;
  var vid=$("tv-background");
  function videoState(){if(document.hidden||window.matchMedia("(prefers-reduced-motion: reduce)").matches)vid.pause();else vid.play().catch(function(){});}
  document.addEventListener("visibilitychange",function(){videoState();if(!document.hidden)queueRefresh();});
@@ -308,6 +369,9 @@ function start(){
  subscribe();
  refresh();
  setInterval(function(){if(!document.hidden)refresh();},12000);
+ // Reliable fallback: 2.5 s cue-only polling even when Realtime packets drop.
+ // Match introductions last 10 s, so the previous 12 s scoreboard poll was too slow.
+ setInterval(function(){if(!document.hidden&&!previewKind)void checkCue();},2500);
  setInterval(autoBracket,5000);
 }
 if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",start);else start();

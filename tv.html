@@ -10,7 +10,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/tv.css?v=rules-20261023">
+<link rel="stylesheet" href="css/tv.css?v=live-cues-fix-20261023">
 </head>
 <body>
 <div class="broadcast" id="tv-stage">
@@ -119,9 +119,13 @@
     </div>
     <div class="scene-bottom"><span>CIMBRIA BIERPONG CUP</span><span>LEGENDÄRE SPIELE. UNVERGESSLICHE NÄCHTE.</span></div>
   </div>
+  <div id="tv-preview-alert" class="tv-preview-alert" role="note" hidden>
+    <span><b>ANIMATIONS-VORSCHAU</b> · Dieser Testbildschirm ist noch nicht der reguläre Live-TV-Modus.</span>
+    <a href="tv.html?v=live-cues-fix">Echten Live-TV-Modus öffnen ↗</a>
+  </div>
   <div id="tv-connection" class="tv-connection" aria-live="polite">VERBINDE ZUM TURNIER...</div>
 </div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js" defer></script>
-<script src="js/tv.js?v=rules-20261023" defer></script>
+<script src="js/tv.js?v=live-cues-fix-20261023" defer></script>
 </body>
 </html>

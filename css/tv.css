@@ -174,3 +174,17 @@ button,a{font:inherit}a{color:inherit;text-decoration:none}
 @media(max-width:1100px){.tv-rules-grid{grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:none;grid-auto-rows:minmax(107px,auto)}.tv-rule-card{padding:12px 17px}.tv-rule-card p{font-size:clamp(12px,1.4vw,17px)}.tv-rule-card h3{font-size:clamp(12px,1.5vw,18px)}}
 @media(max-width:600px){.tv-scene[data-kind="rules"] .scene-rules{top:100px;bottom:55px;left:17px;right:17px;gap:12px}.scene-rules .scene-heading{font-size:51px}.tv-rules-grid{grid-template-columns:1fr;grid-auto-rows:auto}.tv-rule-card{min-height:100px}.tv-rule-card p{font-size:14px}.tv-rule-card h3{font-size:15px}.tv-rules-binding{font-size:12px}.tv-rules-persistent{padding-bottom:9px}}
 @media(prefers-reduced-motion:reduce){.tv-rule-card{animation:none}}
+
+/* Cue-reliability release: make preview mode unmistakable. */
+.tv-preview-alert[hidden]{display:none!important}
+.tv-preview-alert{position:fixed;z-index:70;top:91px;left:50%;transform:translateX(-50%);
+ width:min(1050px,calc(100vw - 40px));display:flex;align-items:center;justify-content:space-between;
+ gap:14px;padding:12px 18px;border:1px solid rgba(244,191,104,.7);border-radius:12px;
+ background:rgba(27,8,33,.96);color:#e7d7e5;backdrop-filter:blur(15px);
+ box-shadow:0 12px 30px rgba(0,0,0,.4);font:600 12px/1.6 Manrope,system-ui,sans-serif}
+.tv-preview-alert b{color:#ffdf9d;letter-spacing:.08em}
+.tv-preview-alert a{flex:none;padding:9px 13px;border-radius:8px;
+ border:1px solid rgba(242,185,90,.6);background:rgba(214,163,71,.14);
+ color:#ffe1a9;font-weight:800;white-space:nowrap}
+.tv-preview-alert a:hover{background:rgba(214,163,71,.24)}
+@media(max-width:710px){.tv-preview-alert{top:80px;flex-direction:column;text-align:center;align-items:stretch;font-size:10px}.tv-preview-alert a{white-space:normal}}
