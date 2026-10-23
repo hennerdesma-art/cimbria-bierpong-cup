@@ -10,7 +10,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/tv.css?v=draw-12-20261020">
+<link rel="stylesheet" href="css/tv.css?v=rules-20261023">
 </head>
 <body>
 <div class="broadcast" id="tv-stage">
@@ -75,11 +75,53 @@
       <div id="scene-bracket-grid" class="scene-bracket-grid"></div>
       <div class="scene-progress"><span></span></div>
     </div>
+    <div id="scene-rules" class="scene-content scene-rules">
+      <div class="tv-rules-header">
+        <p class="scene-eyebrow">OFFIZIELLES TURNIERREGELWERK</p>
+        <h2 class="scene-heading">DIE <em>SPIELREGELN</em></h2>
+        <p class="tv-rules-subtitle">CIMBRIA BIERPONG CUP · 8 REGELN · FÜR ALLE VERBINDLICH</p>
+      </div>
+      <div class="tv-rules-grid"><article class="tv-rule-card" style="--rule-i:0">
+  <div class="tv-rule-card-head"><span class="tv-rule-number">01</span><h3>ELLENBOGENREGEL</h3></div>
+  <p>Ellenbogen beim Wurf hinter der Tape-Linie.</p>
+</article>
+<article class="tv-rule-card" style="--rule-i:1">
+  <div class="tv-rule-card-head"><span class="tv-rule-number">02</span><h3>BECHER UMSTELLEN</h3></div>
+  <p>Einmal pro Team und Spiel umstellen.</p>
+</article>
+<article class="tv-rule-card" style="--rule-i:2">
+  <div class="tv-rule-card-head"><span class="tv-rule-number">03</span><h3>ZWEI WÜRFE</h3></div>
+  <p>Zwei Würfe je Team und Runde – auch bei mehr Personen.</p>
+</article>
+<article class="tv-rule-card" style="--rule-i:3">
+  <div class="tv-rule-card-head"><span class="tv-rule-number">04</span><h3>BOMBE</h3></div>
+  <p>Getroffener Becher + alle direkt berührenden Becher raus.</p>
+</article>
+<article class="tv-rule-card" style="--rule-i:4">
+  <div class="tv-rule-card-head"><span class="tv-rule-number">05</span><h3>BALLS BACK</h3></div>
+  <p>Treffen beide Würfe: zwei zusätzliche Würfe.</p>
+</article>
+<article class="tv-rule-card" style="--rule-i:5">
+  <div class="tv-rule-card-head"><span class="tv-rule-number">06</span><h3>TRICKSHOTS</h3></div>
+  <p>Rollt der Ball über die Tischhälfte zurück und wird auf dem Tisch geholt: Trickshot erlaubt.</p>
+</article>
+<article class="tv-rule-card" style="--rule-i:6">
+  <div class="tv-rule-card-head"><span class="tv-rule-number">07</span><h3>AUFSETZER</h3></div>
+  <p>Ball setzt auf und landet im Becher: zwei Becher raus.</p>
+</article>
+<article class="tv-rule-card" style="--rule-i:7">
+  <div class="tv-rule-card-head"><span class="tv-rule-number">08</span><h3>NICHT ERLAUBT</h3></div>
+  <p>Kein Blasen, Fingern oder Island Call.</p>
+</article></div>
+      <div class="tv-rules-binding"><strong>NUR DIESE REGELN GELTEN.</strong>
+        Alle nicht genannten Regeln und Sonderregeln sind ungültig. Bei Unklarheiten entscheidet das Organisationsteam.</div>
+      <p class="tv-rules-persistent">EINBLENDUNG BLEIBT SICHTBAR, BIS DIE TURNIERLEITUNG SIE BEENDET.</p>
+    </div>
     <div class="scene-bottom"><span>CIMBRIA BIERPONG CUP</span><span>LEGENDÄRE SPIELE. UNVERGESSLICHE NÄCHTE.</span></div>
   </div>
   <div id="tv-connection" class="tv-connection" aria-live="polite">VERBINDE ZUM TURNIER...</div>
 </div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js" defer></script>
-<script src="js/tv.js?v=draw-12-20261020" defer></script>
+<script src="js/tv.js?v=rules-20261023" defer></script>
 </body>
 </html>

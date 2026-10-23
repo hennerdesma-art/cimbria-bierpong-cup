@@ -690,7 +690,21 @@
         <details><summary>Wer trägt die Ergebnisse ein?</summary><p>Die Turnierleitung bestätigt nach jedem Spiel den Sieger. Der Admin-Bereich erhält vor dem öffentlichen Start eine sichere Anmeldung.</p></details>
         <details><summary>Wie funktionieren die Spieltische?</summary><p>Die Anzahl der Tische wird im Admin-Bereich festgelegt. Der Hybridmodus macht Vorschläge, die Leitung bestätigt oder verändert die Zuweisung.</p></details>
         <details><summary>Stehen Datum, Uhrzeit und Ort fest?</summary><p>Diese Veranstaltungsinformationen ergänzen wir, sobald sie offiziell festgelegt sind.</p></details>
-      </div></div>`;
+        <details><summary>Welche Spielregeln gelten beim Cimbria Cup?</summary><p>Es gelten ausschließlich die acht Regeln unseres offiziellen Turnierregelwerks. <a href="regeln.html" class="cim-rules-inline-link">Alle Spielregeln ansehen →</a></p></details>
+      </div>
+      <section class="v2-glass v2-panel cim-rules-promo" aria-labelledby="cim-info-rules-heading">
+        <div class="cim-rules-promo-copy">
+          <div class="panel-caption">${icon('shield')} OFFIZIELL · VERBINDLICH</div>
+          <h2 id="cim-info-rules-heading" class="serif">Spielregeln</h2>
+          <p>Ellbogen hinter dem Tape, zwei Würfe pro Runde, Bombe, Balls Back, Trickshots und Bounce Shots. Alle acht Regeln – kompakt und eindeutig für jedes Team.</p>
+          <div class="cim-rules-promo-actions">
+            <a href="regeln.html" class="btn btn-gold">${icon('info')} Spielregeln öffnen ↗</a>
+            <a class="btn btn-outline" href="assets/Cimbria_Bierpong_Cup_Spielregeln.pdf" download="Cimbria_Bierpong_Cup_Spielregeln.pdf">${icon('download')} PDF herunterladen</a>
+          </div>
+        </div>
+        <div class="cim-rules-promo-ornament" aria-hidden="true"><span>08</span><small>REGELN</small></div>
+      </section>
+      </div>`;
   }
   const ROUND_LABELS=['Achtelfinale','Viertelfinale','Halbfinale','Finale'];
   const ROUND_SLOTS=[['A1','B2'],['C1','D2'],['E1','F2'],['G1','H2'],['B1','A2'],['D1','C2'],['F1','E2'],['H1','G2']];
@@ -816,6 +830,7 @@
             <button type="button" class="btn btn-outline btn-sm" data-action="tv-cue" data-kind="winner" data-match="${state.tvMainMatchId||''}"
               ${!allMatches().some(m=>m.id===state.tvMainMatchId&&m.status==='done')?'disabled title="Nur nach bestätigtem Ergebnis"':''}>Siegeranimation senden</button>
             <button type="button" class="btn btn-outline btn-sm" data-action="tv-cue" data-kind="bracket">Turnierbaum einblenden</button>
+            <button type="button" class="btn btn-outline btn-sm cim-tv-rules-button" data-action="tv-cue" data-kind="rules">${icon('info')} Spielregeln auf TV anzeigen</button>
             <button type="button" class="btn btn-quiet btn-sm" data-action="tv-cue" data-kind="clear">Einblendung beenden</button>
           </div>
           <div class="cim-tv-test-links">
@@ -823,6 +838,7 @@
             <a href="tv.html?preview=intro" target="_blank" rel="noopener noreferrer">VS-Intro testen ↗</a>
             <a href="tv.html?preview=winner" target="_blank" rel="noopener noreferrer">Sieg testen ↗</a>
             <a href="tv.html?preview=bracket" target="_blank" rel="noopener noreferrer">Turnierbaum testen ↗</a>
+            <a href="tv.html?preview=rules" target="_blank" rel="noopener noreferrer">Regeln-Vorschau ↗</a>
           </div>
         </div>
       </div>

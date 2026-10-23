@@ -20,7 +20,12 @@ var connection=$("tv-connection");
 var previewKind=new URLSearchParams(window.location.search).get("preview");
 var previewDone=false;
 function previewAnimation(){
- if(previewDone||!["intro","winner","bracket"].includes(previewKind))return;
+ if(previewDone||!["intro","winner","bracket","rules"].includes(previewKind))return;
+ if(previewKind==="rules"){
+   previewDone=true;
+   showScene("rules",null,0);
+   return;
+ }
  previewDone=true;
  var names=["Die Zirkelfreunde","Cup Kings","Flüssige Legenden","Beerpong Bandits",
   "Becherbuben","Tischkönige","Pongstars","Violett Victory","Raketencrew",
@@ -170,9 +175,9 @@ function closeScene(){
 }
 function showScene(kind,match,duration){
  if(kind==="clear"){closeScene();return;}
- if(!["intro","winner","bracket"].includes(kind))return;
+ if(!["intro","winner","bracket","rules"].includes(kind))return;
  duration=Number(duration)||9000;
- if(kind!=="bracket"&&!match)return;
+ if(!["bracket","rules"].includes(kind)&&!match)return;
  if(sceneTimer)clearTimeout(sceneTimer);
  if(introClockTimer)clearInterval(introClockTimer);
  introClockTimer=null;
@@ -198,19 +203,20 @@ function showScene(kind,match,duration){
    $("scene-winner-icon").src=iconPath(win.icon_id);
    setText("scene-win-context",matchRound(match)+(t?" · "+t.name.toUpperCase():"")+
      (match.stage==="playoff"&&match.round_no<3?" · AUFSTIEG IN DIE NÄCHSTE RUNDE":""));
- }else{
+ }else if(kind==="bracket"){
    $("scene-bracket-grid").innerHTML=bracketHtml();
  }
  // Restart all CSS animations on successive TV cues.
  void root.offsetWidth;root.classList.add("on");
  lastSceneTime=Date.now();sceneActive=true;
- sceneTimer=setTimeout(closeScene,duration);
+ if(kind!=="rules")sceneTimer=setTimeout(closeScene,duration);
 }
 function showCue(cue){
  if(!cue||cue.id<=lastCueId)return;
  lastCueId=cue.id;
  var age=Date.now()-Date.parse(cue.created_at);
- if(age<0||age>Math.max(3500,cue.duration_ms+3000))return;
+ // Rule display remains until explicitly cleared, even across a TV refresh.
+ if(cue.kind!=="rules"&&(age<0||age>Math.max(3500,cue.duration_ms+3000)))return;
  var match=state.matches.find(function(m){return m.id===cue.match_id;})||null;
  showScene(cue.kind,match,cue.duration_ms);
 }
@@ -246,8 +252,9 @@ async function refresh(){
    state.tablesById=Object.fromEntries(state.tables.map(function(x){return [x.id,x];}));
    state.groupById=Object.fromEntries(state.groups.map(function(x){return [x.id,x.code];}));
    renderAll();connectionStatus("VERBUNDEN",false);
-   if(previewKind&&!previewDone)previewAnimation();
-   else await checkCue();
+   if(previewKind){
+     if(!previewDone)previewAnimation();
+   }else await checkCue();
  }catch(err){
    console.warn("TV-Synchronisation:",err);
    connectionStatus("VERBINDUNG UNTERBROCHEN – ERNEUTER VERSUCH",true);
@@ -276,6 +283,7 @@ function renderConfetti(){
  el.innerHTML=bits.join("");
 }
 function autoBracket(){
+ if(previewKind)return;
  if(!state.t||!state.t.tv_rotate_bracket||state.t.phase!=="playoffs"||sceneActive)return;
  if(Date.now()-lastSceneTime>=82000){
    showScene("bracket",null,15000);

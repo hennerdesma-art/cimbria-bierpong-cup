@@ -1,7 +1,7 @@
 name: Validate Cimbria Website
 on:
   push:
-    branches: [main, feat/supabase-auth-live, feat/admin-password-login, feat/cup-score-admin-team-limit, feat/v5-cinematic-tv-emblems, feat/start-from-12-teams, feat/admin-tournament-reset]
+    branches: [main, feat/supabase-auth-live, feat/admin-password-login, feat/cup-score-admin-team-limit, feat/v5-cinematic-tv-emblems, feat/start-from-12-teams, feat/admin-tournament-reset, feat/spielregeln-web-pdf-tv]
   pull_request:
     branches: [main]
 permissions:
@@ -81,4 +81,25 @@ jobs:
           assert(cloud.includes('p_confirmation: confirmation'));
           assert(html.includes('reset-v6-20261020'));
           console.log('Admin reset UI and RPC integration: passed');
+          NODE
+
+      - name: Check public rules page, PDF and live TV cue
+        run: |
+          node - <<'NODE'
+          const fs = require('node:fs');
+          const assert = require('node:assert/strict');
+          const info = fs.readFileSync('js/app.js','utf8');
+          const web = fs.readFileSync('regeln.html','utf8');
+          const tv = fs.readFileSync('tv.html','utf8');
+          const engine = fs.readFileSync('js/tv.js','utf8');
+          const pdf = fs.readFileSync('assets/Cimbria_Bierpong_Cup_Spielregeln.pdf');
+          assert.equal(pdf.subarray(0,5).toString('ascii'),'%PDF-');
+          assert(pdf.length>3500,'PDF file unexpectedly empty');
+          assert.equal((web.match(/class="rule-card"/g)||[]).length,8);
+          assert.equal((tv.match(/class="tv-rule-card"/g)||[]).length,8);
+          assert(info.includes('data-kind="rules"'),'Admin TV-rules action missing');
+          assert(info.includes('regeln.html'),'Infos page link missing');
+          assert(engine.includes('kind!=="rules"'),'Persistent TV rules logic missing');
+          assert(fs.existsSync('supabase/migrations/20261023162839_cimbria_tv_show_official_rules_on_demand.sql'));
+          console.log('Rules web page, PDF download and TV controls: valid.');
           NODE

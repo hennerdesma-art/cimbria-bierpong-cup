@@ -68,3 +68,12 @@ Unter **Admin → Turnier → Turnier zurücksetzen** gibt es einen gesonderten 
 **Supabase archiviert den vollständigen bisherigen Turnierstand automatisch vor jeder Löschung in einer privaten Tabelle.** Das Turnier kehrt anschließend zur Anmeldephase zurück; die Registrierung bleibt zunächst geschlossen. Admin-Zugänge und eingerichtete Spieltische bleiben bestehen. Eine Rücksicherung des privaten Archivs müsste ein Datenbankadministrator durchführen.
 
 **Nur Hauptadmins dürfen zurücksetzen.** Ein normales Mitglied oder ein Turnieradmin mit der Rolle Supervisor hat weder den Menüpunkt noch die serverseitige Berechtigung. Das Bereitstellen neuer Website-Dateien setzt das Turnier **nicht** zurück.
+
+
+## Offizielle Spielregeln (Website, PDF und Live-TV)
+
+Die acht verbindlichen Cimbria-Regeln findest du auf **Infos → FAQs → Spielregeln** oder direkt unter [regeln.html](https://hennerdesma-art.github.io/cimbria-bierpong-cup/regeln.html). Über **PDF herunterladen** lässt sich das einseitige A4-Regelblatt `assets/Cimbria_Bierpong_Cup_Spielregeln.pdf` direkt öffnen und speichern. Die Website zeigt weiterhin das ursprüngliche Bierpong-Hintergrundvideo und den Cimbria-Zirkel.
+
+Für strittige Spielsituationen befindet sich unter **Admin → Turnier → Live-TV & Animationen → Jetzt auf dem TV anzeigen** der Button **Spielregeln auf TV anzeigen**. Dadurch wird die Regelseite als gut lesbare Vollbild-Einblendung auf dem separat geöffneten TV sichtbar. Sie **bleibt stehen**, bis ein Admin **Einblendung beenden** drückt oder eine neue manuelle/automatische Sendung sie ersetzt. Test ohne Datenänderung: [TV-Regel-Vorschau](https://hennerdesma-art.github.io/cimbria-bierpong-cup/tv.html?preview=rules).
+
+**Regelinhalt:** Ellenbogen hinter Tape, einmal Becher umstellen, zwei Würfe pro Runde unabhängig von der Teamgröße, Bombe (alle berührenden Becher), Balls Back bei zwei Treffern, Trickshots nach Rückrollen über die Tischmitte und Zurückholen auf dem Tisch, Aufsetzer zählen zwei Becher, kein Blasen/Fingern/Island. Nur die explizit genannten Regeln gelten; Streitfälle gehen an das Organisationsteam.

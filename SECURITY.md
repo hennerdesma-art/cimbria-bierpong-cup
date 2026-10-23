@@ -23,3 +23,10 @@
 - Rücksetzen ist nur mit der festgelegten phrase `CIMBRIA RESET` und identischem `p_expected_revision` möglich. Kein normaler Gast, kein anonymer Benutzer und kein Supervisor dürfen Daten löschen.
 - Die private Archiv-Tabelle ist nicht über die öffentliche Supabase-API sichtbar; weder anonyme noch authentifizierte Benutzer haben `SELECT` darauf. Enthält personenbezogene Daten und muss entsprechend geschützt und nach dem gewünschten Aufbewahrungszeitraum verwaltet werden.
 - Beim Reset werden Spielstände und alte TV-Cues transaktional gelöscht, während Auth-Identitäten und Konfigurationen erhalten bleiben. Nach dem Reset bleibt die öffentliche Teamanmeldung gesperrt, bis ein Admin sie aktiviert.
+
+
+## Offizielle Regelszene (TV)
+
+- Der neue `rules`-Cue kann über den bestehenden `cimbria_tv_control`-RPC nur von einem tatsächlich berechtigten Administrator ausgelöst werden. Anonyme Besucher haben nach wie vor keine INSERT- oder RPC-Schreibrechte.
+- Die TV-Szene ist statischer Text und enthält weder private Spielernamen noch dynamisch generiertes HTML. Das erneute Anzeigen der Regeln ändert keine Ergebnisse oder Team- und Spielerlisten.
+- Der TV-Sperrzustand bleibt bis `clear` oder einem späteren Cue bestehen. Diese Priorität kann die automatische Main-Stage-Animation unterbrechen, um aktuellere Ergebnisse anzuzeigen.

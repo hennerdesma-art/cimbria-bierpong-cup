@@ -31,3 +31,11 @@ Die drei Vorschau-Links enthalten fiktive Namen und Embleme ausschließlich im a
 Supabase `tv_cues` veröffentlicht die Regie-Ereignisse über Realtime; ein periodischer Abruf dient als Fallback. Der TV-Client besitzt **nur** einen öffentlichen Publishable Key. In einem ruhenden Browser-Tab oder bei aktivem Energiesparen können Animationen verzögert oder übersprungen werden. Das TV-Fenster vor dem Turnier auf dem tatsächlichen Ausgabegerät testen und Standby deaktivieren.
 
 Das TV-Modul verwendet das unveränderte bestehende Video; es braucht keine zusätzliche Server- oder Hosting-Konfiguration außer der vorhandenen GitHub-Pages-Veröffentlichung.
+
+## Regeln auf dem Fernseher zeigen – Streitfälle
+
+In **Admin → Turnier → Live-TV & Animationen → Jetzt auf dem TV anzeigen** auf **Spielregeln auf TV anzeigen** klicken. Die offizielle Regelliste erscheint sofort auf der bereits geöffneten TV-Seite – auch ohne ausgewähltes Main-Stage-Spiel.
+
+**Wichtig:** Im Gegensatz zu Intros läuft die Regelszene **nicht automatisch ab**. Sie bleibt so lange stehen, bis ein Admin **Einblendung beenden** wählt oder eine andere TV-Szene sendet. Der Spielstand wird dabei nicht verändert, und das Hintergrundvideo bleibt vorhanden.
+
+Eine datenneutrale Vorschau ist unter `tv.html?preview=rules` erreichbar. Die offizielle Regelseite liegt unter `regeln.html`, das A4-PDF unter `assets/Cimbria_Bierpong_Cup_Spielregeln.pdf`.

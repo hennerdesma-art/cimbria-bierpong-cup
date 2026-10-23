@@ -187,3 +187,21 @@ button[disabled] { cursor: not-allowed; opacity: .6; }
   .cim-reset-dialog-actions{flex-direction:column-reverse}
   .cim-reset-dialog-actions>.btn{width:100%}
 }
+
+/* V7 · official tournament rules displayed directly after FAQs. */
+.cim-rules-promo{position:relative;display:flex;align-items:center;justify-content:space-between;gap:28px;overflow:hidden;margin-top:14px;padding:clamp(22px,3vw,38px);background:linear-gradient(115deg,rgba(84,31,59,.84),rgba(23,11,31,.87))!important;border:1px solid rgba(238,186,104,.55)!important}
+.cim-rules-promo-copy{position:relative;z-index:1;flex:1;min-width:0}
+.cim-rules-promo .panel-caption{color:#e7c183;font-size:10px;font-weight:800;letter-spacing:.14em}
+.cim-rules-promo .panel-caption .icon{vertical-align:middle}
+.cim-rules-promo h2{font-size:clamp(31px,3vw,47px);color:#fff0dc;margin:7px 0 9px;line-height:1}
+.cim-rules-promo p{font-size:13px;max-width:66ch;line-height:1.85;color:#decbd8;margin:0 0 18px}
+.cim-rules-promo-actions{display:flex;gap:10px;flex-wrap:wrap}
+.cim-rules-promo-actions .btn{min-height:44px;justify-content:center}
+.cim-rules-promo-ornament{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;flex:none;width:175px;height:175px;border:1px solid rgba(247,195,112,.48);border-radius:50%;background:radial-gradient(circle,rgba(247,171,66,.12),rgba(50,17,44,.2));box-shadow:0 0 43px rgba(230,153,52,.09)}
+.cim-rules-promo-ornament span{font:700 98px/.9 "Cormorant Garamond",Georgia,serif;color:#eac37f}
+.cim-rules-promo-ornament small{color:#e9bf78;font-size:10px;letter-spacing:.24em;font-weight:800}
+.cim-rules-inline-link{color:#ebc780!important;text-decoration:underline;text-underline-offset:3px}
+.cim-rules-inline-link:hover{color:#fff0cf!important}
+.cim-tv-rules-button{border-color:rgba(239,192,108,.7)!important;color:#f7dba7!important}
+.cim-tv-rules-button:hover:not(:disabled){background:rgba(230,172,70,.17)!important}
+@media(max-width:690px){.cim-rules-promo-ornament{display:none}.cim-rules-promo-actions{flex-direction:column}.cim-rules-promo-actions>.btn{width:100%}}

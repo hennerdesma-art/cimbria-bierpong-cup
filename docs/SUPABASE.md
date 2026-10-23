@@ -81,3 +81,13 @@
 - Das Turnier wechselt in die Phase `registration`, mit `registration_open=false` und `tv_main_match_id=null`. Die öffentliche Website bleibt erreichbar; die Teamanmeldung muss der Admin selbst öffnen.
 - **Migrationen installieren oder Code deployen löst niemals einen Reset aus.** Nur der explizite bestätigte Admin-Aufruf führt ihn aus.
 - Der Reset wurde an einer künstlichen Testturnierkopie innerhalb `BEGIN ... ROLLBACK` überprüft; die realen Teilnehmer wurden dabei nicht verändert.
+
+
+## Offizielle Spielregeln (Webseite, PDF und TV; Oktober 2026)
+
+- Standalone-Seite `regeln.html` + `css/rules.css` im Cimbria-Design, verlinkt als zusätzlicher Bereich unter **Infos & FAQ**.
+- Einseitiges A4-Dokument unter `assets/Cimbria_Bierpong_Cup_Spielregeln.pdf` als direkter PDF-Download. Browserdruck auf `regeln.html` unterstützt.
+- `tv_cues.kind` gestattet zusätzlich den serverseitig verifizierten Wert `rules`. Die bestehende, durch `cimbria_private.is_cimbria_admin()` geschützte Regie-RPC `cimbria_tv_control('rules', null, null)` sendet ihn ohne Matchbezug und ohne Änderung von Mannschaften oder Ergebnissen.
+- `tv.html` und `js/tv.js` enthalten die acht Regeln als statische öffentliche Vollbildszene. Die Regel-Einblendung bleibt bis `clear` oder bis zu einem nachfolgenden Cue geöffnet; sie wird bei einem Neuladen der TV-Seite aus dem jüngsten `rules`-Cue rekonstruiert. Andere Animationen behalten ihre bisherige Zeitbegrenzung.
+- Vorschau `tv.html?preview=rules` benötigt keinen Admin-Aufruf und schreibt keine Datenbankdaten.
+- Die Datenbankmigration wurde ausgeführt und `rules` / `clear` ausschließlich in einer zurückgerollten Testtransaktion geprüft. Echte Turnierteams und Resultate blieben unverändert.
