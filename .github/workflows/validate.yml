@@ -1,7 +1,7 @@
 name: Validate Cimbria Website
 on:
   push:
-    branches: [main, feat/supabase-auth-live, feat/admin-password-login, feat/cup-score-admin-team-limit, feat/v5-cinematic-tv-emblems, feat/start-from-12-teams, feat/admin-tournament-reset, feat/spielregeln-web-pdf-tv, fix/live-tv-animation-delivery]
+    branches: [main, feat/supabase-auth-live, feat/admin-password-login, feat/cup-score-admin-team-limit, feat/v5-cinematic-tv-emblems, feat/start-from-12-teams, feat/admin-tournament-reset, feat/spielregeln-web-pdf-tv, fix/live-tv-animation-delivery, feat/admin-edit-teams-groups]
   pull_request:
     branches: [main]
 permissions:
@@ -107,3 +107,7 @@ jobs:
       - name: Test TV cue delivery and preview recovery
         run: |
           node tests/tv-cue-delivery.test.cjs
+
+      - name: Validate admin team and group override
+        run: |
+          node tests/team-admin-edit.test.cjs

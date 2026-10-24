@@ -91,3 +91,15 @@
 - `tv.html` und `js/tv.js` enthalten die acht Regeln als statische öffentliche Vollbildszene. Die Regel-Einblendung bleibt bis `clear` oder bis zu einem nachfolgenden Cue geöffnet; sie wird bei einem Neuladen der TV-Seite aus dem jüngsten `rules`-Cue rekonstruiert. Andere Animationen behalten ihre bisherige Zeitbegrenzung.
 - Vorschau `tv.html?preview=rules` benötigt keinen Admin-Aufruf und schreibt keine Datenbankdaten.
 - Die Datenbankmigration wurde ausgeführt und `rules` / `clear` ausschließlich in einer zurückgerollten Testtransaktion geprüft. Echte Turnierteams und Resultate blieben unverändert.
+
+
+## V9: Live-Korrektur von Teamname, Kader und Gruppenzuordnung
+
+- **API:** `public.cimbria_admin_edit_team(p_team_id uuid,p_name text,p_players jsonb,p_expected_revision bigint,p_group_code text default null,p_swap_team_id uuid default null)`. `SECURITY INVOKER`, `SET search_path=''`, `EXECUTE` nur für `authenticated`; in der Funktion wird `auth.uid()` und `cimbria_private.is_cimbria_admin()` geprüft.
+- `tournaments FOR UPDATE` und `revision` verhindern konkurrierende Änderungen auf veralteten Datenständen. Alle Bearbeitungen laufen in einer DB-Transaktion.
+- `teams.id` bleibt unverändert; nur `teams.name` wird aktualisiert. Somit bleiben historische Matches, Siege, Niederlagen, Cups und das TV-Main-Stage-Spiel unberührt.
+- Mitglieder (`public.players`): 2–4 Names pro Team, 2–50 Zeichen, keine doppelten Namen; `INSERT ... ON CONFLICT(team_id,slot) DO UPDATE` und `DELETE WHERE slot>count`. Bestehende Spieler-IDs bleiben für unveränderte Slots erhalten.
+- `p_group_code` ermöglicht Gruppenänderungen während `phase='groups'`, sofern betroffene Teams keine `ready`, `live` oder `done`-Matches haben, keine Tiebreaks in beteiligten Gruppen vorliegen und kein Playoff-Baum begonnen wurde. Bei Teamverschiebungen ohne Tausch müssen Gruppen 2–4 Teams enthalten. Als Alternative kann ein Tauschpartner aus der Zielgruppe gewählt werden.
+- Nur obsolet gewordene **offene** Gruppenmatches in alter/neuer Gruppe werden gelöscht. Bereits gespielte und zugewiesene Spiele anderer Teams bleiben bestehen; neue Round-Robin-Paarungen werden fehlendenfalls erzeugt.
+- UI: `Admin → Teams → Bearbeiten` mit Namenseingabe, dynamischem Kader (2–4), Gruppen-/Tausch-Selektor, Vorschau von vorherigen Ergebnissen und expliziter Bestätigung beim Gruppenwechsel. Nach Playoff-Start ist der Gruppen-Selektor bewusst gesperrt, Namen/Kader bleiben editierbar.
+- **Regressionstests:** eigene Supabase-Testturnierdaten wurden in einer `BEGIN ... ROLLBACK`-Transaktion getestet: Namen nach abgeschlossenen Partien, 2→4→2 Spieler, freie Gruppenverschiebung, Gruppentausch, Ergebnis-Erhalt, 1-Spieler-Fehler, veraltete Revision und Wechselverbot nach Playoff-Start. Der anonyme RPC-Aufruf ist gesperrt. Bestehende Produktionsdaten blieben unverändert.

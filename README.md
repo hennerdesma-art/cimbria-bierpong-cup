@@ -86,3 +86,12 @@ Bei zeitweise schwachem WLAN konnten bisher VS-Intros und Siegeranimationen ausb
 Die korrigierte V8 fragt `tv_cues` unabhängig vom Spielstand alle **2,5 Sekunden** ab, verarbeitet nach Start jede **neue Cue-ID** unabhängig von Gerätedatumsabweichungen und verliert parallele Realtime-Benachrichtigungen bei einem gerade laufenden Reload nicht mehr. Eine einmalige Vorschau wechselt nach ihrer Animation automatisch zum regulären Live-TV; eine dauerhafte Regel-Vorschau hat einen deutlichen Link **Echten Live-TV-Modus öffnen**.
 
 Ein TV-Tab sollte als dauerhafter Bühnenbildschirm die Adresse `/tv.html` **ohne `?preview=`** verwenden. Nach Updates den Tab einmal neu laden; die Referenzen verwenden einen Cache-Buster.
+
+
+## V9 – Teamverwaltung während des laufenden Cups (Admin)
+
+**Admin Control Center → Teams → Bearbeiten**: Administratoren können einen Teamnamen auch nach bereits gespielten Spielen umbenennen sowie 2–4 Mitglieder hinzufügen, entfernen und korrigieren. Alle bisher bestätigten Ergebnisse, Match-IDs, Becherstände, Tischzuweisungen und Statistiken bleiben mit der **unveränderten Team-UUID** verknüpft. Zuschauer und Teilnehmer besitzen keinen Editier-Zugriff.
+
+**Manuelle Gruppenkorrektur:** Während der **Gruppenphase** können Admins ein bislang ungespieltes und nicht einem Tisch zugewiesenes Team einer anderen Gruppe zuordnen oder es mit einem anderen noch nicht eingesetzten Team tauschen. Bei einfacher Verschiebung müssen beide Gruppen zwischen **2 und 4 Teams** behalten. Die Datenbank entfernt nur ungespielte, inzwischen ungültige Gruppenspiele und fügt die fehlenden Paarungen hinzu. Bereits bestätigte Ergebnisse bleiben erhalten. Wenn das betroffene Team bereits gespielt hat, ein Entscheidungsspiel in einer der Gruppen existiert oder die Playoffs begonnen haben, verhindert Supabase den Gruppenwechsel zum Schutz der Rangliste und des K.-o.-Baums. Teamnamen und Mitglieder bleiben in diesen Fällen weiterhin editierbar.
+
+Die Änderung wird **atomar in Supabase** durchgeführt, über einen `SECURITY INVOKER`-RPC mit echter Admin-Prüfung und Turnier-Revisionskontrolle. Ein erfolgreiches Speichern aktualisiert auch die öffentliche Teamliste, Spielpläne und Live-Ansichten. Bestehende Turnierdaten werden beim Deploy nicht geändert. Tests siehe `tests/team-admin-edit.test.cjs` sowie den SQL-Regressionstest.

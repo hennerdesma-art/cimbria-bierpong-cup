@@ -243,6 +243,29 @@
   }
   async function setTeamLimit(max){assert(await client.rpc("cimbria_set_max_teams",{p_max:max}));return reload();}
   async function updateCups(id,side,delta){assert(await client.rpc("cimbria_update_cups",{p_match:id,p_team:side,p_delta:delta}));return reload();}
+  async function editTeam(teamId,name,players,groupCode=null,swapTeamId=null,expectedRevision=revision) {
+    if (!authorized) throw new Error("Nur Turnieradmins dürfen Teams ändern.");
+    if (busy) throw new Error("Bitte die laufende Speicherung abwarten.");
+    if (!Array.isArray(players) || players.length<2 || players.length>4)
+      throw new Error("Jedes Team benötigt zwei bis vier Mitglieder.");
+    if (!Number.isSafeInteger(Number(expectedRevision)))
+      throw new Error("Ungültiger Turnierstand. Bitte die Seite aktualisieren.");
+    busy = true;
+    try {
+      const result = assert(await client.rpc("cimbria_admin_edit_team",{
+        p_team_id:teamId,
+        p_name:String(name).trim(),
+        p_players:players.map(p=>String(p).trim()),
+        p_expected_revision:Number(expectedRevision),
+        p_group_code:groupCode||null,
+        p_swap_team_id:swapTeamId||null,
+      }));
+      if (!result?.success) throw new Error("Änderung wurde von Supabase nicht bestätigt.");
+      revision=Number(result.revision);
+      const next=await reload();
+      return {state:next,details:result};
+    } finally { busy=false; }
+  }
   async function getMembers(){return assert(await client.rpc("cimbria_admin_members",{p_action:"list"}));}
   async function changeMember(action,email,role="supervisor"){assert(await client.rpc("cimbria_admin_members",{p_action:action,p_email:email,p_role:role}));return getMembers();}
   async function registerInvitedAdmin(email,password){
@@ -289,7 +312,7 @@
     return await reload();
   }
   window.CimbriaCloud = {
-    initialize, reload, save, guestRegister, signInAdmin, logout,setTeamLimit,updateCups,getMembers,changeMember,registerInvitedAdmin,tvControl,resetTournament,
+    initialize, reload, save, guestRegister, signInAdmin, logout,setTeamLimit,updateCups,getMembers,changeMember,registerInvitedAdmin,tvControl,resetTournament,editTeam,
     get isAdmin() { return authorized; },
     get canManageMembers() { return canManageMembers; },
     get email() { return authEmail; },

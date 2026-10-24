@@ -125,7 +125,7 @@
   let ui = {
     page: 'home', mobileMenu:false, adminTab:'tables', liveFilter:'all', liveGroup:'A',
     saving:false, cloudLoading:true, authSent:false, authEmail:'Henner@desma.africa',signupOpen:false,adminMembers:[],
-    resetDialogOpen:false,resetExpectedRevision:null,resetConfirmText:'',
+    resetDialogOpen:false,resetExpectedRevision:null,resetConfirmText:'',teamEdit:null,teamEdit:null,
     liveSearch:'', liveExpanded:false, teamSearch:'', selections:{}, registration:{teamName:'',players:['',''],iconId:'crown'}, toast:null
   };
   function persist(){ /* Live state is persisted in Supabase, never in localStorage. */ }
@@ -775,10 +775,141 @@
         return `<div class="admin-queue-row"><div><strong>${teamMarkup(m.winnerId)}</strong> <span class="muted">schlägt</span> ${teamMarkup(other)}<div class="muted text-xs" style="margin-top:6px">${m.type==='group'?'Gruppe '+m.group:m.type==='tiebreak'?'Entscheidungsspiel':ROUND_LABELS[m.round]} · ${timeString(m.completedAt)}</div></div><button class="btn btn-quiet btn-sm" data-action="correct" data-match="${m.id}" data-winner="${other}" ${restricted?'disabled title="Nach Playoff-Start gesperrt"':''}>${icon('edit')} Korrigieren</button></div>`;
       }).join(''):`<div class="view-empty">${icon('trophy')}<strong>Noch keine Ergebnisse</strong><p>Weise im Reiter „Spieltische“ ein Spiel zu, starte es und bestätige den Sieger.</p></div>`}</div>`;
   }
+
+  function renderTeamEditorModal(){
+    const draft=ui.teamEdit;
+    const team=draft&&teamById(draft.id);
+    if(!draft||!team)return '';
+    const groupRecord=state.groups.find(g=>g.teamIds.includes(team.id));
+    const currentCode=groupRecord?.name||'';
+    const targetCode=draft.groupCode||currentCode;
+    const changingGroup=state.phase==='groups'&&targetCode!==currentCode;
+    const target=state.groups.find(g=>g.name===targetCode);
+    const affectedMatches=allMatches().filter(m=>m.teamAId===team.id||m.teamBId===team.id);
+    const completed=affectedMatches.filter(m=>m.status==='done').length;
+    const started=affectedMatches.some(m=>['ready','live','done'].includes(m.status));
+    const swapChoices=(target?.teamIds||[]).filter(id=>id!==team.id);
+    const groupLocked=state.phase!=='groups';
+    return `<div class="cim-team-edit-overlay" role="presentation">
+      <section class="cim-team-edit-dialog" role="dialog" aria-modal="true"
+        aria-labelledby="cim-team-edit-title" aria-describedby="cim-team-edit-description">
+        <header class="cim-team-edit-head">
+          <span class="cim-team-edit-crest">${teamIconImg(team.iconId,'team-card-crest')}</span>
+          <div>
+            <p class="panel-caption">CIMBRIA · ADMIN-TEAMVERWALTUNG</p>
+            <h2 class="serif" id="cim-team-edit-title">Team bearbeiten</h2>
+            <p id="cim-team-edit-description">${escape(team.name)} · ${completed} abgeschlossene Partien</p>
+          </div>
+          <button class="cim-team-edit-x tiny-button" type="button" data-action="team-edit-cancel"
+            aria-label="Bearbeitung schließen">${icon('close')}</button>
+        </header>
+        <form id="cimbria-team-edit-form" class="cim-team-edit-form">
+          <div class="cim-team-edit-field">
+            <label for="cim-team-name">Teamname</label>
+            <input id="cim-team-name" name="teamName" type="text" minlength="3" maxlength="35"
+              autocomplete="off" spellcheck="false" required value="${escape(draft.name)}">
+            <p class="muted text-xs">Der neue Name erscheint auch in bisherigen Ergebnissen und im Live-TV.</p>
+          </div>
+          <div class="cim-team-edit-section-title">
+            <div><strong>Teammitglieder</strong><small>2 bis 4 Personen · Reihenfolge frei anpassen</small></div>
+            <span class="badge gold">${draft.players.length} / 4</span>
+          </div>
+          <div class="cim-team-roster">
+            ${draft.players.map((player,i)=>`<div class="cim-team-roster-item">
+              <span class="cim-player-index">${i+1}</span>
+              <input name="member" data-admin-player-index="${i}" type="text"
+                maxlength="50" minlength="2" required
+                aria-label="Name von Mitglied ${i+1}" value="${escape(player)}">
+              <button type="button" class="tiny-button cim-member-remove"
+                data-action="team-edit-remove-member" data-index="${i}"
+                aria-label="Mitglied ${i+1} entfernen" ${draft.players.length<=2?'disabled title="Mindestens zwei Mitglieder erforderlich"':''}>
+                ${icon('close')}
+              </button>
+            </div>`).join('')}
+          </div>
+          <button type="button" class="btn btn-outline btn-sm cim-add-member"
+            data-action="team-edit-add-member" ${draft.players.length>=4?'disabled':''}>
+            ${icon('plus')} Mitglied hinzufügen
+          </button>
+          <div class="cim-team-group-zone">
+            <div class="cim-team-edit-section-title">
+              <div><strong>Gruppenzuordnung</strong><small>${currentCode?'Aktuell: Gruppe '+escape(currentCode):'Noch nicht ausgelost'}</small></div>
+              <span class="badge ${groupLocked?'violet':'gold'}">${groupLocked?'Gesperrt':'Admin-Korrektur'}</span>
+            </div>
+            ${state.phase==='groups'?`<label for="cim-team-group">Zielgruppe</label>
+              <select id="cim-team-group" class="table-select" name="groupCode" data-team-edit-group="1">
+                ${state.groups.map(g=>`<option value="${escape(g.name)}" ${g.name===targetCode?'selected':''}>Gruppe ${escape(g.name)} · ${g.teamIds.length} Teams</option>`).join('')}
+              </select>
+              ${changingGroup?`<div class="cim-team-edit-swap">
+                <label for="cim-team-swap">Tauschpartner aus Gruppe ${escape(targetCode)} (optional)</label>
+                <select id="cim-team-swap" class="table-select" name="swapTeam" data-team-edit-swap="1">
+                  <option value="">Ohne Tausch – Team verschieben</option>
+                  ${swapChoices.map(id=>`<option value="${escape(id)}" ${draft.swapTeamId===id?'selected':''}>${escape(teamLabel(id))}</option>`).join('')}
+                </select>
+                <p class="muted text-xs">Ohne Tausch müssen 2–4 Teams in beiden Gruppen verbleiben. Noch offene Paarungen werden bei einem Wechsel automatisch korrigiert.</p>
+                ${started?`<div class="cim-team-group-warning">${icon('info')} Dieses Team hat bereits ein gespieltes, laufendes oder zugewiesenes Spiel. Ein Gruppenwechsel ist daher gesperrt; Name und Kader kannst du trotzdem ändern.</div>`:''}
+              </div>`:''}`
+              :`<div class="cim-team-group-warning">${icon('lock')} ${state.phase==='playoffs'
+                ?'Die Playoffs sind bereits gestartet. Eine nachträgliche Gruppenänderung würde den gesetzten K.-o.-Baum verfälschen.'
+                :'Die Gruppenzuordnung wird erst nach dem Auslosen freigegeben.'}
+                Teamname und Teammitglieder bleiben unabhängig davon bearbeitbar.</div>`}
+          </div>
+          <p class="cim-team-edit-safe">${icon('shield')} Bestehende Siege, Becherstände, Match-IDs und bereits bestätigte Ergebnisse werden nicht verändert.</p>
+          <div class="cim-team-edit-actions">
+            <button type="button" class="btn btn-outline" data-action="team-edit-cancel">Abbrechen</button>
+            <button type="submit" class="btn btn-gold" ${ui.saving?'disabled':''}>
+              ${icon('check')} Änderungen speichern
+            </button>
+          </div>
+        </form>
+      </section>
+    </div>`;
+  }
   function renderAdminTeams(){
-    return `<div class="wide-line" style="margin-bottom:22px"><div><div class="card-title">Registrierte Teams</div><div class="card-subtitle">${state.teams.length} von ${MAX_TEAMS()} Plätzen vergeben</div></div><a class="btn btn-outline btn-sm" href="#/registration">${icon('plus')} Teamanmeldung öffnen</a></div>
-      <div class="admin-team-list">${state.teams.map(t=>`<div class="admin-team"><div class="wide-line"><strong>${escape(t.name)}</strong>${state.phase==='registration'?`<span style="display:flex;gap:6px"><button class="tiny-button" data-action="rename-team" data-id="${escape(t.id)}" aria-label="Team umbenennen">${icon('edit')}</button><button class="tiny-button" data-action="delete-team" data-id="${escape(t.id)}" aria-label="Team löschen">${icon('close')}</button></span>`:''}</div><small>${t.players.map(escape).join(' · ')}</small></div>`).join('')}</div>
-      <div class="notice margin-top">${icon('info')}<div>In dieser ersten Version können Teams vor dem Turnierstart umbenannt oder entfernt werden. Nach der Auslosung bleibt die Teilnehmerliste gesperrt, damit Ergebnisse und Gruppenzuordnung konsistent bleiben.</div></div>`;
+    const completed=allMatches();
+    return `<div class="wide-line cim-team-admin-header">
+      <div>
+        <div class="card-title">Registrierte Teams</div>
+        <div class="card-subtitle">${state.teams.length} von ${MAX_TEAMS()} Plätzen vergeben · Nur für Administratoren bearbeitbar</div>
+      </div>
+      ${state.phase==='registration'?`<a class="btn btn-outline btn-sm" href="#/registration">${icon('plus')} Teamanmeldung öffnen</a>`:
+        '<span class="badge gold">TURNIER GESTARTET</span>'}
+      </div>
+      <div class="notice cim-team-edit-info">${icon('info')}<div>
+        <strong>Teamdaten auch während des Turniers korrigieren</strong>
+        Namen und Mitglieder (2–4) können jederzeit geändert werden. Ergebnisse bleiben bestehen.
+        Gruppenwechsel und Tausch sind während der Gruppenphase für noch nicht gespielte bzw. zugewiesene Teams möglich.
+        Nach dem Playoff-Start ist die Gruppeneinteilung gesperrt.
+      </div></div>
+      <div class="admin-team-list cim-admin-team-list">
+      ${state.teams.map(t=>{
+        const g=state.groups.find(x=>x.teamIds.includes(t.id));
+        const finished=completed.filter(m=>m.status==='done'&&(m.teamAId===t.id||m.teamBId===t.id)).length;
+        return `<article class="admin-team cim-admin-team">
+          <div class="cim-admin-team-core">
+            <span class="cim-admin-team-crest">${teamIconImg(t.iconId,'team-card-crest')}</span>
+            <div class="cim-admin-team-meta">
+              <strong>${escape(t.name)}</strong>
+              <div class="cim-admin-team-tags">
+                <span>${g?'GRUPPE '+escape(g.name):'NICHT AUSGELOST'}</span>
+                <span>${finished} Spiele beendet</span>
+                <span>${t.players.length} Mitglieder</span>
+              </div>
+              <small>${t.players.map(escape).join(' · ')}</small>
+            </div>
+          </div>
+          <div class="cim-admin-team-actions">
+            <button type="button" class="btn btn-outline btn-sm"
+              data-action="team-edit-open" data-id="${escape(t.id)}">
+              ${icon('edit')} Bearbeiten
+            </button>
+            ${state.phase==='registration'?`<button class="tiny-button" type="button" data-action="delete-team"
+               data-id="${escape(t.id)}" aria-label="Team löschen">${icon('close')}</button>`:''}
+          </div>
+        </article>`;
+      }).join('')}
+      ${!state.teams.length?'<div class="cim-team-edit-empty">Noch keine Teams registriert.</div>':''}
+      </div>`;
   }
   function renderAdminMembers(){
     return `<div class="card-title">Admin-Mitglieder</div><p class="muted text-sm">Neue Admins mit ihrer E-Mail freigeben. Jede Person legt ein eigenes Passwort fest und bestätigt einmalig die E-Mail.</p>
@@ -947,21 +1078,23 @@ ${ui.signupOpen?`<form id="admin-signup" class="subtle-frame">
     if(!el)return;
     const scrollY=window.scrollY;
     const views={home:renderHome,registration:renderRegistration,live:renderLive,playoffs:renderPlayoffs,admin:renderAdmin,teams:renderTeams,schedule:renderSchedule,info:renderInfo};
-    el.innerHTML=`${renderHeader()}<main id="content">${(views[ui.page]||views.home)()}</main>${renderFooter()}${renderMobileTabs()}${ui.toast?`<div class="toast ${ui.toast.error?'error':''}" role="status">${icon(ui.toast.error?'alert':'check')}<span>${escape(ui.toast.message)}</span><button class="tiny-button" aria-label="Hinweis schließen" data-action="close-toast">${icon('close')}</button></div>`:''}`;
+    el.innerHTML=`${renderHeader()}<main id="content">${(views[ui.page]||views.home)()}</main>${renderFooter()}${renderMobileTabs()}${ui.page==='admin'&&CLOUD.isAdmin&&ui.teamEdit?renderTeamEditorModal():''}${ui.toast?`<div class="toast ${ui.toast.error?'error':''}" role="status">${icon(ui.toast.error?'alert':'check')}<span>${escape(ui.toast.message)}</span><button class="tiny-button" aria-label="Hinweis schließen" data-action="close-toast">${icon('close')}</button></div>`:''}`;
     if(keepScroll)window.scrollTo(0,scrollY);
   }
-  function renameTeam(id){
-    if(state.phase!=='registration')return;
+
+  function renameTeam(id){openTeamEditor(id);}
+  function openTeamEditor(id){
+    if(!CLOUD.isAdmin)return;
     const team=teamById(id);
     if(!team)return;
-    const changed=window.prompt('Neuer Teamname:',team.name);
-    if(changed===null)return;
-    const name=changed.trim();
-    if(name.length<3||name.length>35){notify('Teamnamen müssen zwischen 3 und 35 Zeichen lang sein.',true);return;}
-    if(state.teams.some(t=>t.id!==id&&t.name.toLowerCase()===name.toLowerCase())){notify('Teamname bereits vergeben.',true);return;}
-    team.name=name;
-    logAction(`Team umbenannt in ${name}.`);
-    commit('Teamname aktualisiert.');
+    const g=state.groups.find(x=>x.teamIds.includes(id));
+    ui.teamEdit={
+      id,name:team.name,players:[...team.players],
+      groupCode:g?.name||'',swapTeamId:'',
+      expectedRevision:Number(CLOUD.current?.revision ?? state.revision)
+    };
+    render();
+    document.getElementById('cim-team-name')?.focus();
   }
   function deleteTeam(id){
     if(state.phase!=='registration')return;
@@ -1054,6 +1187,22 @@ ui.saving=true;CLOUD.changeMember('remove',btn.dataset.email).then(m=>{ui.adminM
       case 'start-groups':drawGroups();break;
       case 'finish-demo-groups':completeDemoGroups();break;
       case 'start-playoffs':startPlayoffs();break;
+      case 'team-edit-open':openTeamEditor(btn.dataset.id);break;
+      case 'team-edit-cancel':ui.teamEdit=null;render();break;
+      case 'team-edit-add-member':
+        if(ui.teamEdit&&ui.teamEdit.players.length<4){
+          ui.teamEdit.players.push('');render();
+          document.querySelector('[data-admin-player-index="'+(ui.teamEdit.players.length-1)+'"]')?.focus();
+        }
+        break;
+      case 'team-edit-remove-member':
+        if(ui.teamEdit&&ui.teamEdit.players.length>2){
+          const index=Number(btn.dataset.index);
+          if(Number.isInteger(index)&&index>=0&&index<ui.teamEdit.players.length){
+            ui.teamEdit.players.splice(index,1);render();
+          }
+        }
+        break;
       case 'rename-team':renameTeam(btn.dataset.id);break;
       case 'delete-team':deleteTeam(btn.dataset.id);break;
       case 'reset':resetDemo();break;
@@ -1067,6 +1216,10 @@ ui.saving=true;CLOUD.changeMember('remove',btn.dataset.email).then(m=>{ui.adminM
   });
   document.addEventListener('input',event=>{
     const target=event.target;
+    if(ui.teamEdit&&target.id==='cim-team-name'){ui.teamEdit.name=target.value;return;}
+    if(ui.teamEdit&&target.dataset.adminPlayerIndex!==undefined){
+      ui.teamEdit.players[Number(target.dataset.adminPlayerIndex)]=target.value;return;
+    }
     if(target.id==='cimbria-reset-confirm'){ui.resetConfirmText=target.value;return;}
     if(target.dataset.draft==='name'){ui.registration.teamName=target.value;return;}
     if(target.dataset.player!==undefined){ui.registration.players[Number(target.dataset.player)]=target.value;return;}
@@ -1082,10 +1235,58 @@ ui.saving=true;CLOUD.changeMember('remove',btn.dataset.email).then(m=>{ui.adminM
     }
   });
   document.addEventListener('change',event=>{
+    if(ui.teamEdit&&event.target.dataset.teamEditGroup!==undefined){
+      ui.teamEdit.groupCode=event.target.value;
+      ui.teamEdit.swapTeamId='';
+      render();
+      return;
+    }
+    if(ui.teamEdit&&event.target.dataset.teamEditSwap!==undefined){
+      ui.teamEdit.swapTeamId=event.target.value;return;
+    }
     const tableId=event.target.dataset.selection;
     if(tableId)ui.selections[tableId]=event.target.value;
   });
   document.addEventListener('submit',event=>{
+    if(event.target.id==='cimbria-team-edit-form'){
+      event.preventDefault();
+      if(ui.saving||!CLOUD.isAdmin||!ui.teamEdit)return;
+      const draft=ui.teamEdit;
+      const team=teamById(draft.id);
+      if(!team){notify('Team nicht mehr vorhanden. Bitte neu laden.',true);return;}
+      const form=event.target;
+      const name=form.elements.teamName.value.trim();
+      const players=Array.from(form.querySelectorAll('input[name="member"]')).map(x=>x.value.trim());
+      const groupBefore=state.groups.find(g=>g.teamIds.includes(team.id))?.name||'';
+      const nextGroup=(state.phase==='groups'?form.elements.groupCode?.value||groupBefore:null);
+      const moving=state.phase==='groups'&&nextGroup!==groupBefore;
+      const swapId=moving?form.elements.swapTeam?.value||null:null;
+      if(name.length<3||name.length>35){notify('Teamname: bitte 3 bis 35 Zeichen.',true);return;}
+      if(players.length<2||players.length>4||players.some(x=>x.length<2||x.length>50)){
+        notify('Ein Team benötigt zwei bis vier Mitglieder mit Namen von jeweils 2 bis 50 Zeichen.',true);return;
+      }
+      if(new Set(players.map(x=>x.toLocaleLowerCase('de'))).size!==players.length){
+        notify('Jedes Mitglied darf nur einmal pro Team vorkommen.',true);return;
+      }
+      if(moving){
+        const locked=allMatches().some(m=>(m.teamAId===team.id||m.teamBId===team.id)
+          &&['ready','live','done'].includes(m.status));
+        if(locked){notify('Dieses Team hat schon gespielte oder zugewiesene Matches und darf die Gruppe nicht wechseln.',true);return;}
+        if(!window.confirm('Gruppeneinteilung wirklich ändern? Noch offene Gruppenspiele der betroffenen Gruppen werden automatisch angepasst. Gespielte Resultate bleiben bestehen.'))return;
+      }
+      ui.saving=true;render();
+      CLOUD.editTeam(draft.id,name,players,nextGroup,swapId,draft.expectedRevision).then(({state:next,details})=>{
+        state=next;ui.teamEdit=null;ui.saving=false;
+        const changed=details.group_changed?
+          ' Gruppeneinteilung angepasst: '+details.fixtures_removed+' offene Begegnungen entfernt, '+details.fixtures_created+' neue erstellt.':'';
+        notify('Teamdaten gespeichert: '+name+' · '+details.member_count+' Mitglieder.'+changed);
+      }).catch(async err=>{
+        ui.saving=false;
+        try{state=await CLOUD.reload();}catch(loadError){console.warn(loadError);}
+        notify('Teamänderung nicht gespeichert: '+err.message+'. Bei Versionskonflikt bitte schließen und neu öffnen.',true);
+      });
+      return;
+    }
     if(event.target.id==='cimbria-reset-form'){
       event.preventDefault();
       if(ui.saving||!CLOUD.canManageMembers||!ui.resetDialogOpen)return;

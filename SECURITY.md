@@ -30,3 +30,11 @@
 - Der neue `rules`-Cue kann über den bestehenden `cimbria_tv_control`-RPC nur von einem tatsächlich berechtigten Administrator ausgelöst werden. Anonyme Besucher haben nach wie vor keine INSERT- oder RPC-Schreibrechte.
 - Die TV-Szene ist statischer Text und enthält weder private Spielernamen noch dynamisch generiertes HTML. Das erneute Anzeigen der Regeln ändert keine Ergebnisse oder Team- und Spielerlisten.
 - Der TV-Sperrzustand bleibt bis `clear` oder einem späteren Cue bestehen. Diese Priorität kann die automatische Main-Stage-Animation unterbrechen, um aktuellere Ergebnisse anzuzeigen.
+
+
+## Admin-Teamkorrekturen nach Turnierstart
+
+- Kein Gast darf Teamnamen, Roster oder Gruppen per UI bearbeiten. Neue Team-Korrekturen laufen ausschließlich über eine `SECURITY INVOKER`-RPC mit RLS, authentifizierter Benutzer-ID und serverseitiger Admin-Aktivprüfung.
+- Es werden keine vertraulichen Admin-Schlüssel im Browser benötigt. `EXECUTE` wurde für `PUBLIC` und `anon` explizit entzogen.
+- Revision-Locks schützen vor doppelten oder veralteten Speichervorgängen; Datenbankvalidierung garantiert 2–4 Mitglieder, eindeutige Teamnamen und sichere Paarungskorrekturen.
+- Die Gruppenphase wird nicht nachträglich durch Änderungen überschrieben, wenn betroffene Teams schon zugewiesene/gespielte Matches haben oder die Playoffs bereits gestartet wurden. Historische Ergebnisse bleiben an die stabile Team-ID gebunden.

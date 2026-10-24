@@ -205,3 +205,67 @@ button[disabled] { cursor: not-allowed; opacity: .6; }
 .cim-tv-rules-button{border-color:rgba(239,192,108,.7)!important;color:#f7dba7!important}
 .cim-tv-rules-button:hover:not(:disabled){background:rgba(230,172,70,.17)!important}
 @media(max-width:690px){.cim-rules-promo-ornament{display:none}.cim-rules-promo-actions{flex-direction:column}.cim-rules-promo-actions>.btn{width:100%}}
+
+/* V9: Admin-only team / roster editor. Existing matches retain their stable team UUIDs. */
+.cim-team-admin-header{align-items:flex-start;gap:14px;flex-wrap:wrap}
+.cim-team-edit-info{margin:0 0 18px;display:flex;align-items:flex-start;gap:12px;line-height:1.75}
+.cim-team-edit-info strong{display:block;color:#f7e0ab;margin-bottom:2px}
+.cim-admin-team-list{display:grid;gap:12px}
+.cim-admin-team{padding:13px 15px;border-radius:12px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;background:linear-gradient(120deg,rgba(36,14,38,.85),rgba(15,8,22,.84));border:1px solid rgba(225,165,96,.22)}
+.cim-admin-team-core{display:flex;gap:13px;align-items:center;flex:1 1 250px;min-width:0}
+.cim-admin-team-crest{flex:none;display:grid;place-items:center;width:52px;height:57px;background:rgba(207,149,86,.07);border:1px solid rgba(228,183,103,.24);border-radius:10px}
+.cim-admin-team-crest img{width:45px;height:50px;object-fit:contain}
+.cim-admin-team-meta{min-width:0;display:grid;gap:6px}
+.cim-admin-team-meta>strong{color:#ffe7cf;font-size:14px;line-height:1.35;overflow-wrap:anywhere}
+.cim-admin-team-meta small{font-size:11px;line-height:1.65;color:#c7b4c3;overflow-wrap:anywhere}
+.cim-admin-team-tags{display:flex;flex-wrap:wrap;gap:5px}
+.cim-admin-team-tags span{font-size:9px;font-weight:800;letter-spacing:.045em;padding:3px 7px;border:1px solid rgba(228,182,102,.24);border-radius:12px;color:#edca95;background:rgba(156,79,55,.085)}
+.cim-admin-team-actions{display:flex;align-items:center;gap:8px;flex:none}
+.cim-admin-team-actions>.btn{min-height:37px}
+.cim-team-edit-empty{padding:28px 12px;text-align:center;color:#d0b7c2}
+.cim-team-edit-overlay{position:fixed;inset:0;z-index:10000;display:grid;place-items:center;padding:18px;background:rgba(7,2,15,.88);backdrop-filter:blur(11px);overflow-y:auto}
+.cim-team-edit-dialog{width:min(100%,610px);max-height:min(91vh,900px);overflow-y:auto;border:1px solid rgba(241,184,94,.52);border-radius:19px;box-shadow:0 22px 90px rgba(0,0,0,.68),inset 0 1px rgba(252,204,139,.1);background:radial-gradient(ellipse at top right,rgba(127,35,76,.31),transparent 55%),linear-gradient(145deg,#281126,#130a1e);padding:clamp(17px,3vw,29px);scrollbar-color:#94633f #1d0d1b}
+.cim-team-edit-head{display:flex;align-items:flex-start;gap:13px;border-bottom:1px solid rgba(225,174,96,.22);padding-bottom:17px}
+.cim-team-edit-crest{width:64px;height:71px;flex:none;display:grid;place-items:center;border:1px solid rgba(241,189,104,.4);border-radius:12px;background:rgba(236,156,89,.065)}
+.cim-team-edit-crest img{max-width:56px;max-height:62px;object-fit:contain}
+.cim-team-edit-head>div{flex:1;min-width:0}
+.cim-team-edit-head .panel-caption{color:#efc68b;letter-spacing:.12em;font-size:9px;font-weight:800}
+.cim-team-edit-head h2{font-size:clamp(29px,3vw,42px);line-height:1.1;color:#fff1de;margin:3px 0 6px}
+.cim-team-edit-head p:last-child{font-size:12px;color:#d1bccc;line-height:1.5;margin:0}
+.cim-team-edit-x{margin-left:auto;flex:none}
+.cim-team-edit-form{display:grid;gap:17px;padding-top:21px}
+.cim-team-edit-field{display:grid;gap:7px}
+.cim-team-edit-field>label,.cim-team-group-zone>label,.cim-team-edit-swap>label{font-size:12px;font-weight:800;color:#f4dbba}
+.cim-team-edit-field input,.cim-team-roster-item input{display:block;width:100%;min-width:0;box-sizing:border-box;background:#100a1a;color:#fff3ed;border:1px solid rgba(237,189,110,.4);border-radius:9px;padding:12px 13px;font:600 13px Manrope,system-ui,sans-serif;outline:none}
+.cim-team-edit-field input:focus,.cim-team-roster-item input:focus,.cim-team-edit-dialog select:focus{border-color:#ffe0a3;outline:2px solid rgba(247,196,112,.35);outline-offset:1px}
+.cim-team-edit-field p{margin:0;line-height:1.6}
+.cim-team-edit-section-title{display:flex;align-items:center;justify-content:space-between;gap:9px}
+.cim-team-edit-section-title>div{display:flex;flex-direction:column;gap:4px}
+.cim-team-edit-section-title strong{font-size:13px;color:#f7dfbd}
+.cim-team-edit-section-title small{color:#c0acc0;font-size:10px}
+.cim-team-roster{display:grid;gap:9px}
+.cim-team-roster-item{display:flex;align-items:center;gap:8px}
+.cim-player-index{flex:none;display:grid;place-items:center;width:30px;height:37px;border-radius:7px;background:rgba(225,178,95,.12);border:1px solid rgba(241,191,105,.35);color:#f0cd95;font-size:12px;font-weight:800}
+.cim-team-roster-item input{flex:1}
+.cim-member-remove{flex:none;width:36px;height:36px;display:grid;place-items:center}
+.cim-member-remove:disabled{opacity:.3;cursor:not-allowed}
+.cim-add-member{justify-self:start}
+.cim-team-group-zone{display:grid;gap:11px;border:1px solid rgba(231,176,102,.25);border-radius:12px;padding:15px;background:rgba(9,4,17,.25)}
+.cim-team-edit-dialog select.table-select{max-width:100%;width:100%;min-height:42px}
+.cim-team-edit-swap{display:grid;gap:9px}
+.cim-team-edit-swap>.muted{margin:0;line-height:1.7}
+.cim-team-group-warning{display:flex;align-items:flex-start;gap:9px;font-size:11px;color:#f1c7b6;line-height:1.75;padding:10px 12px;background:rgba(115,35,64,.22);border:1px solid rgba(237,134,140,.26);border-radius:10px}
+.cim-team-group-warning .icon{flex:none;width:17px;height:17px;margin-top:2px}
+.cim-team-edit-safe{display:flex;align-items:flex-start;gap:9px;font-size:11px;line-height:1.7;color:#ead3a9;margin:0}
+.cim-team-edit-safe .icon{flex:none;width:17px;height:17px;margin-top:1px}
+.cim-team-edit-actions{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:11px;padding-top:14px;border-top:1px solid rgba(236,178,105,.22)}
+.cim-team-edit-actions .btn{min-height:43px}
+@media(max-width:660px){
+  .cim-admin-team{padding:12px}.cim-admin-team-actions{flex:1 1 100%}.cim-admin-team-actions>.btn{flex:1;text-align:center;justify-content:center}
+  .cim-team-edit-overlay{padding:8px;align-items:start}
+  .cim-team-edit-dialog{padding:16px;max-height:calc(100dvh - 16px);margin:auto}
+  .cim-team-edit-crest{width:47px;height:54px}.cim-team-edit-crest img{max-height:48px;width:40px}
+  .cim-team-edit-head{gap:8px}.cim-team-edit-actions{flex-direction:column-reverse}
+  .cim-team-edit-actions>.btn{width:100%;justify-content:center}
+}
+@media(prefers-reduced-motion:reduce){.cim-team-edit-overlay *{transition:none!important;animation:none!important}}
