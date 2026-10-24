@@ -79,7 +79,7 @@ jobs:
           assert(app.includes('CLOUD.resetTournament(confirmation,expected)'));
           assert(cloud.includes('p_expected_revision: expectedRevision'));
           assert(cloud.includes('p_confirmation: confirmation'));
-          assert(html.includes('reset-v6-20261020'));
+          assert(html.includes('team-admin-v9-20261024'));
           console.log('Admin reset UI and RPC integration: passed');
           NODE
 
