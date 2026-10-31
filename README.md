@@ -95,3 +95,14 @@ Ein TV-Tab sollte als dauerhafter Bühnenbildschirm die Adresse `/tv.html` **ohn
 **Manuelle Gruppenkorrektur:** Während der **Gruppenphase** können Admins ein bislang ungespieltes und nicht einem Tisch zugewiesenes Team einer anderen Gruppe zuordnen oder es mit einem anderen noch nicht eingesetzten Team tauschen. Bei einfacher Verschiebung müssen beide Gruppen zwischen **2 und 4 Teams** behalten. Die Datenbank entfernt nur ungespielte, inzwischen ungültige Gruppenspiele und fügt die fehlenden Paarungen hinzu. Bereits bestätigte Ergebnisse bleiben erhalten. Wenn das betroffene Team bereits gespielt hat, ein Entscheidungsspiel in einer der Gruppen existiert oder die Playoffs begonnen haben, verhindert Supabase den Gruppenwechsel zum Schutz der Rangliste und des K.-o.-Baums. Teamnamen und Mitglieder bleiben in diesen Fällen weiterhin editierbar.
 
 Die Änderung wird **atomar in Supabase** durchgeführt, über einen `SECURITY INVOKER`-RPC mit echter Admin-Prüfung und Turnier-Revisionskontrolle. Ein erfolgreiches Speichern aktualisiert auch die öffentliche Teamliste, Spielpläne und Live-Ansichten. Bestehende Turnierdaten werden beim Deploy nicht geändert. Tests siehe `tests/team-admin-edit.test.cjs` sowie den SQL-Regressionstest.
+
+
+## Geschützter Gäste-Check-in (Cimbria)
+
+**Direktlink:** `checkin.html` (unter dem Pages-Projektverzeichnis). Zusätzlich im **Admin Control Center → Gäste-Check-in** verlinkt.
+
+Die Türliste lässt sich auf Smartphone, iPad oder PC abhaken. Funktionen: Name/Kontakt/Studiengang suchen, Filter **Alle / Da / Offen**, Live-Zähler, Fortschritt, ein Häkchen setzen oder rückgängig machen, Details zu Kontakt und Studiengang. Änderungen werden mit Zeitstempel und Admin-ID in Supabase protokolliert. Bei mehreren Geräten aktualisiert die Seite über Realtime und Polling den Stand; parallele Änderungen werden durch Compare-and-Swap erkannt.
+
+**Privatsphäre:** Die Seite ist kein öffentlicher Gastzugang. Sie verlangt die bestehenden **aktiven und bestätigten Cimbria-Admin-Zugänge**; die Datenbank-RLS prüft die serverseitige Admin-Freigabe. Anonyme Besucher können weder Namen/Kontakte lesen noch Anwesenheitsstände schreiben. Das öffentliche Repository enthält **keine Namen, Telefonnummern, Instagram-Konten oder Studiengänge aus der Gästeliste**. Die 54 Quellzeilen wurden ausschließlich über eine geschützte Supabase-Verbindung importiert und ergeben nach drei offensichtlichen Doppel-Einträgen und Aufteilung einer Zwei-Personen-Zeile **52 abhakebare Personen**. Die Daten werden bewusst nicht als Seed in einer öffentlichen Migration gespeichert.
+
+Die Teamanmeldung und das laufende Bierpong-Turnier werden durch diese Unterseite nicht verändert. Lösche die persönlichen Gästedaten in Supabase, wenn die Aufbewahrung für den konkreten Veranstaltungszweck nicht mehr nötig ist.

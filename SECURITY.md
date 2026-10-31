@@ -38,3 +38,14 @@
 - Es werden keine vertraulichen Admin-Schlüssel im Browser benötigt. `EXECUTE` wurde für `PUBLIC` und `anon` explizit entzogen.
 - Revision-Locks schützen vor doppelten oder veralteten Speichervorgängen; Datenbankvalidierung garantiert 2–4 Mitglieder, eindeutige Teamnamen und sichere Paarungskorrekturen.
 - Die Gruppenphase wird nicht nachträglich durch Änderungen überschrieben, wenn betroffene Teams schon zugewiesene/gespielte Matches haben oder die Playoffs bereits gestartet wurden. Historische Ergebnisse bleiben an die stabile Team-ID gebunden.
+
+
+## Nichtöffentliche Check-in-Gästeliste
+
+- Persönliche Gästedaten werden **ausschließlich in Supabase**, nicht in GitHub-Dateien, Website-Quellcode, Client-Bundles, Assets oder öffentlichen Migrationen gespeichert.
+- `public.cimbria_guest_checkin` hat **RLS aktiviert** und ist mit der vorhandenen geprüften Admin-Allowlist geschützt. `anon` verfügt über **keine** SELECT-, INSERT-, UPDATE- oder DELETE-Berechtigung.
+- `authenticated` hat **SELECT** und ausschließlich **UPDATE (checked_in)**; es existieren keine Client-INSERT- oder DELETE-Rechte. Die UPDATE-/SELECT-RLS-Policies verlangen zusätzlich `cimbria_private.is_cimbria_admin()` (aktive, bestätigte Admin-Identität).
+- Ein Datenbanktrigger setzt `checked_in_at`, `checked_in_by` und `updated_at`, validiert nochmals die Admin-Berechtigung und schreibt ein privates Auditprotokoll. Ein anonymer oder nicht autorisierter Account sieht keine Datensätze.
+- Die UI verwendet `textContent` bzw. HTML-Escaping, `aria-pressed` für Häkchen und eine Vergleichsbedingung auf den bisherigen Anwesenheitszustand, um konkurrierende Check-ins nicht stillschweigend zu überschreiben.
+- `noindex` ist lediglich zusätzlicher Schutz gegen Indexierung, **keine Authentifizierung**. Den eigentlichen Zugriff regeln Supabase-RLS und authentifizierte Admin-Sitzungen.
+- Die Datenbankänderung und der nichtöffentliche Import sind voneinander getrennt. Nach Ablauf der erforderlichen Aufbewahrungsfrist sollte die Gästeliste sicher aus Supabase entfernt werden.

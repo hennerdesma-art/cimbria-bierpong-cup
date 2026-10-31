@@ -1057,6 +1057,7 @@ ${ui.signupOpen?`<form id="admin-signup" class="subtle-frame">
       <div class="container content-pad v2-admin-page">
       <div class="v2-admin-notice">${icon('shield')} <span><b>Geschützter Admin-Bereich</b> · ${escape(CLOUD.email)} · Änderungen werden in Supabase gespeichert.</span>
       <a class="btn btn-gold btn-sm" href="tv.html" target="_blank" rel="noopener noreferrer">${icon('radio')} Live-TV öffnen ↗</a>
+      <a class="btn btn-outline btn-sm" href="checkin.html" aria-label="Geschützte Gästeliste zur Anwesenheitskontrolle öffnen">${icon('check')} Gäste-Check-in ↗</a>
       <button class="btn btn-quiet btn-sm" data-action="admin-logout">Abmelden</button></div>
       <div class="v2-admin-top"><section class="v2-glass v2-panel v2-admin-phase"><div class="v2-panel-title"><div>${icon('grid')}<span>TURNIERSTATUS</span></div></div>
         <span class="v2-eyebrow">Aktuelle Phase</span><h2>${state.phase==='registration'?'Anmeldung':state.phase==='groups'?'Gruppenphase':'Playoffs'}</h2><p>${state.teams.length} / ${MAX_TEAMS()} Teams registriert</p>

@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#180b1b">
+  <meta name="robots" content="noindex, nofollow, noarchive, nosnippet">
+  <meta name="description" content="Geschützter Gäste-Check-in der Cimbria. Nur für berechtigte Veranstaltungsadministratoren.">
+  <title>Gäste-Check-in | Cimbria</title>
+  <link rel="icon" type="image/png" href="assets/zirkel-cimbria.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/checkin.css?v=checkin-1-20261031">
+</head>
+<body>
+  <div class="ci-background" aria-hidden="true">
+    <video id="checkin-video" autoplay muted playsinline loop preload="metadata" poster="assets/background-poster.jpg">
+      <source src="assets/background-bierpong.mp4" type="video/mp4">
+    </video>
+    <div class="ci-background-overlay"></div>
+  </div>
+  <a href="#checkin-main" class="ci-skip">Zum Check-in springen</a>
+  <header class="ci-header">
+    <div class="ci-header-inner">
+      <a href="index.html#/home" class="ci-brand" aria-label="Cimbria – zur Startseite">
+        <img src="assets/zirkel-cimbria.png" alt="" width="48" height="52">
+        <span class="ci-brand-divider"></span>
+        <span class="ci-brand-text"><strong>CIMBRIA</strong><small>GÄSTE-CHECK-IN</small></span>
+      </a>
+      <div class="ci-header-actions">
+        <span class="ci-private-label"><span aria-hidden="true">◆</span> NUR ADMIN</span>
+        <a class="ci-back" href="index.html#/admin">← <span>Admin-Bereich</span></a>
+      </div>
+    </div>
+  </header>
+  <main id="checkin-main" class="ci-main">
+    <section class="ci-headline">
+      <div>
+        <div class="ci-eyebrow"><span class="ci-eyebrow-rule"></span> ANWESENHEITSKONTROLLE · CIMBRIA</div>
+        <h1>Gäste-<em>Check-in.</em></h1>
+        <p>Person suchen, einmal abhaken, fertig. Alle berechtigten Helfer sehen denselben aktuellen Stand.</p>
+      </div>
+      <div class="ci-hero-monogram" aria-hidden="true">C</div>
+    </section>
+
+    <section id="ci-boot" class="ci-boot" aria-live="polite">
+      <span class="ci-loader"></span><span>Geschützte Gästeliste wird geladen …</span>
+    </section>
+
+    <section id="ci-auth" class="ci-auth" hidden aria-labelledby="ci-auth-title">
+      <div class="ci-auth-icon" aria-hidden="true">✦</div>
+      <div class="ci-eyebrow">SICHERER ZUGANG</div>
+      <h2 id="ci-auth-title">Anmelden, um Gäste abzuhaken</h2>
+      <p>Die Liste enthält Kontaktdaten und ist deshalb nur für freigeschaltete Cimbria-Administratoren zugänglich. Verwende deinen bestehenden Admin-Zugang.</p>
+      <form id="ci-login-form">
+        <label for="ci-email">Admin-E-Mail-Adresse</label>
+        <input id="ci-email" type="email" name="email" required autocomplete="username" placeholder="name@example.com">
+        <label for="ci-password">Passwort</label>
+        <input id="ci-password" type="password" name="password" required autocomplete="current-password" minlength="8" placeholder="Admin-Passwort">
+        <button class="ci-primary ci-auth-submit" type="submit">Geschützte Gästeliste öffnen <span aria-hidden="true">→</span></button>
+      </form>
+      <p id="ci-auth-error" class="ci-auth-error" role="alert" hidden></p>
+    </section>
+
+    <section id="ci-denied" class="ci-auth" hidden aria-labelledby="ci-denied-title">
+      <div class="ci-auth-icon" aria-hidden="true">!</div>
+      <h2 id="ci-denied-title">Kein Zugriff auf die Gästeliste</h2>
+      <p>Dieses Konto ist nicht als aktiver Cimbria-Administrator freigeschaltet. Deine Daten bleiben geschützt.</p>
+      <button class="ci-secondary" id="ci-change-user" type="button">Mit anderem Konto anmelden</button>
+    </section>
+
+    <section id="ci-dashboard" hidden>
+      <div class="ci-summary" aria-label="Check-in-Statistik">
+        <article class="ci-summary-card ci-summary-main">
+          <span class="ci-summary-label">ANWESEND</span>
+          <div><strong id="ci-present-count">0</strong><span class="ci-summary-suffix">/ <span id="ci-total-count">0</span></span></div>
+          <span class="ci-summary-description">Personen angekommen</span>
+        </article>
+        <article class="ci-summary-card">
+          <span class="ci-summary-label">NOCH OFFEN</span>
+          <strong id="ci-open-count">0</strong>
+          <span class="ci-summary-description">Personen ausstehend</span>
+        </article>
+        <article class="ci-summary-card">
+          <span class="ci-summary-label">FORTSCHRITT</span>
+          <strong id="ci-percent-count">0 %</strong>
+          <div class="ci-progress" role="progressbar" aria-label="Anteil anwesender Gäste" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" id="ci-progress-track"><span id="ci-progress-fill"></span></div>
+        </article>
+      </div>
+
+      <div class="ci-list-panel">
+        <div class="ci-panel-header">
+          <div><div class="ci-eyebrow">LIVE · ANMELDELISTE</div><h2>Wer ist schon da?</h2></div>
+          <div class="ci-panel-auth"><span id="ci-current-user"></span><button type="button" id="ci-logout" class="ci-logout">Abmelden</button></div>
+        </div>
+        <div class="ci-toolbar">
+          <div class="ci-search-wrap">
+            <svg class="ci-search-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 5 5"/></svg>
+            <input id="ci-search" type="search" spellcheck="false" autocapitalize="off" autocomplete="off" aria-label="Person, Studiengang oder Kontakt suchen" placeholder="Name, Instagram, Nummer oder Studiengang suchen …">
+            <span class="ci-shortcut" aria-hidden="true">⌘ K</span>
+          </div>
+          <div class="ci-filter" role="group" aria-label="Anwesenheit filtern">
+            <button type="button" data-filter="all" class="active" aria-pressed="true">Alle <span id="ci-filter-total">0</span></button>
+            <button type="button" data-filter="present" aria-pressed="false">Da <span id="ci-filter-present">0</span></button>
+            <button type="button" data-filter="open" aria-pressed="false">Offen <span id="ci-filter-open">0</span></button>
+          </div>
+        </div>
+        <div class="ci-list-toolbar">
+          <span id="ci-match-count" aria-live="polite">Gäste werden geladen</span>
+          <span class="ci-live-indicator"><span></span> Mit Supabase synchronisiert</span>
+        </div>
+        <div id="ci-people" class="ci-people" role="list" aria-label="Anmeldeliste"></div>
+        <div id="ci-empty" class="ci-empty" hidden>
+          <span aria-hidden="true">⌕</span>
+          <h3>Keine passenden Personen</h3>
+          <p>Versuche einen anderen Namen oder wechsle den Filter.</p>
+          <button type="button" id="ci-clear-filters" class="ci-secondary">Alle Personen anzeigen</button>
+        </div>
+      </div>
+      <p class="ci-footer-note">Vertrauliche Liste · Namen und Kontakte nur für berechtigte Admins · Änderungen werden automatisch gespeichert und protokolliert.</p>
+    </section>
+  </main>
+  <div id="ci-toast" class="ci-toast" hidden role="status" aria-live="polite"></div>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js" defer></script>
+  <script src="js/checkin.js?v=checkin-1-20261031" defer></script>
+</body>
+</html>

@@ -103,3 +103,14 @@
 - Nur obsolet gewordene **offene** Gruppenmatches in alter/neuer Gruppe werden gelöscht. Bereits gespielte und zugewiesene Spiele anderer Teams bleiben bestehen; neue Round-Robin-Paarungen werden fehlendenfalls erzeugt.
 - UI: `Admin → Teams → Bearbeiten` mit Namenseingabe, dynamischem Kader (2–4), Gruppen-/Tausch-Selektor, Vorschau von vorherigen Ergebnissen und expliziter Bestätigung beim Gruppenwechsel. Nach Playoff-Start ist der Gruppen-Selektor bewusst gesperrt, Namen/Kader bleiben editierbar.
 - **Regressionstests:** eigene Supabase-Testturnierdaten wurden in einer `BEGIN ... ROLLBACK`-Transaktion getestet: Namen nach abgeschlossenen Partien, 2→4→2 Spieler, freie Gruppenverschiebung, Gruppentausch, Ergebnis-Erhalt, 1-Spieler-Fehler, veraltete Revision und Wechselverbot nach Playoff-Start. Der anonyme RPC-Aufruf ist gesperrt. Bestehende Produktionsdaten blieben unverändert.
+
+
+## Private Türliste / Gäste-Check-in
+
+- Die neue Unterseite `checkin.html` mit `css/checkin.css` und `js/checkin.js` ist vom geschützten Admin-Dashboard verlinkt und kann direkt geöffnet werden.
+- Auth nutzt dieselbe Supabase-Session (`storageKey=cimbria-cup-admin-session`) wie die bestehende Bierpong-App. Gäste müssen kein Konto anlegen, sehen aber auch **keine** private Anmeldeliste; nur die bestätigte berechtigte Turnierleitung kann einchecken.
+- Die Tabelle `public.cimbria_guest_checkin` enthält `list_key`, `source_index`, `guest_name`, `contact_detail`, `study_program`, `checked_in`, `checked_in_at`, `checked_in_by`, `updated_at`. Sie ist unter RLS ausschließlich für gültige Admin-Sitzungen lesbar; `UPDATE` ist spaltenweise auf `checked_in` begrenzt.
+- Private Audit-Einträge liegen in `cimbria_private.cimbria_checkin_audit`. Der Trigger setzt den Zeitpunkt und den Bearbeiter.
+- Die Bedienung bietet Suche, Echtzeit-Zähler, Fortschritt, Anwesenheitsfilter, ein Rückgängig-Häkchen und aufklappbare Kontaktdaten. Realtime-Updates werden alle 8 Sekunden durch einen zusätzlichen Fallback-Poll ergänzt. Gleichzeitige Änderungen verwenden den vorherigen Status als Vergleichswert.
+- **Datenimport:** 54 Roh-Zeilen, drei eindeutige Doppeleinträge zusammengeführt, ein Eintrag mit zwei Personen in zwei Einzelpersonen aufgeteilt → 52 Datensätze. Er erfolgte direkt in Supabase, **ohne personenbezogene Seed-Daten im öffentlichen GitHub-Repository**.
+- Keine Änderung an Turniergruppen, Spielständen oder Anmeldung. Nach Veranstaltungsende Aufbewahrungs-/Löschfristen für die privaten Kontaktdaten berücksichtigen.

@@ -1,7 +1,7 @@
 name: Validate Cimbria Website
 on:
   push:
-    branches: [main, feat/supabase-auth-live, feat/admin-password-login, feat/cup-score-admin-team-limit, feat/v5-cinematic-tv-emblems, feat/start-from-12-teams, feat/admin-tournament-reset, feat/spielregeln-web-pdf-tv, fix/live-tv-animation-delivery, feat/admin-edit-teams-groups]
+    branches: [main, feat/supabase-auth-live, feat/admin-password-login, feat/cup-score-admin-team-limit, feat/v5-cinematic-tv-emblems, feat/start-from-12-teams, feat/admin-tournament-reset, feat/spielregeln-web-pdf-tv, fix/live-tv-animation-delivery, feat/admin-edit-teams-groups, feat/private-guest-checkin]
   pull_request:
     branches: [main]
 permissions:
@@ -16,6 +16,7 @@ jobs:
           node --check js/cloud.js
           node --check js/app.js
           node --check js/tv.js
+          node --check js/checkin.js
       - name: Check files and TV references
         run: |
           test -s index.html
@@ -111,3 +112,7 @@ jobs:
       - name: Validate admin team and group override
         run: |
           node tests/team-admin-edit.test.cjs
+
+      - name: Validate private guest check-in (no guest data in repository)
+        run: |
+          node tests/private-checkin.test.cjs
