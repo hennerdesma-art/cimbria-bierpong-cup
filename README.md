@@ -108,16 +108,12 @@ Die Türliste lässt sich auf Smartphone, iPad oder PC abhaken. Funktionen: Name
 Die Teamanmeldung und das laufende Bierpong-Turnier werden durch diese Unterseite nicht verändert. Lösche die persönlichen Gästedaten in Supabase, wenn die Aufbewahrung für den konkreten Veranstaltungszweck nicht mehr nötig ist.
 
 
-## Gäste-Check-in V2: Spontanregistrierung und 30 Testgäste
+## Gäste-Check-in V3: Einheitliche Anwesenheitsliste
 
-Die geschützte `checkin.html`-Seite unterstützt ab sofort:
+Die 52 ursprünglichen Anmeldungen und 30 zusätzlich angelegten Demo-Datensätze erscheinen unter `checkin.html` **als eine durchgehende, einheitlich formatierte Liste**. Es gibt keine TEST-Kennzeichnungen, separaten Demo-Banner, speziellen Testfilter oder einen Demo-Löschbutton im Browser. Die Felder **Anwesend / Offen / Fortschritt** zählen alle aktuell vorhandenen Einträge – zum Zeitpunkt der Umstellung insgesamt **82**. Auch die Filter **Alle / Da / Offen** berücksichtigen sämtliche Datensätze gleichwertig.
 
-- **Person hinzufügen:** Admin-Button über der Gästeliste. Name ist Pflichtfeld (2–100 Zeichen), Telefon/Instagram und Studiengang sind optional. Die `SECURITY INVOKER`-RPC `cimbria_checkin_add_guest` vergibt die nächste freie Listennummer, prüft Auth/RLS, Eingaben und doppelte Personen. Die neue Person ist eine **echte Anmeldung**, zunächst noch nicht eingecheckt, und wird sofort angezeigt und zwischen Geräten synchronisiert.
+**Spontane Anmeldung:** Über **Person hinzufügen** kann ein berechtigter Admin jederzeit Personen mit Name (Pflicht), optionalem Kontakt und Studiengang hinzufügen. Die `SECURITY INVOKER`-RPC `cimbria_checkin_add_guest` prüft Admin-Berechtigung, Validität, Duplikate und vergibt die Listennummer transaktionssicher. Die Anwesenheit lässt sich anschließend wie bei jedem bestehenden Gast abhaken.
 
-- **30 Demo-Einträge:** Für den visuellen Test wurden 30 eindeutig fiktive Personen **direkt in die geschützte Datenbank importiert**, nicht in den öffentlichen GitHub-Code. Jede Karte trägt ein sichtbares **TEST**-Abzeichen, plus einen Erklärungshinweis über der Liste. Standardmäßig sind sie sichtbar und können zum Testen der Checkboxen verwendet werden.
+**Wichtig zur späteren Bereinigung:** Die 30 erfundenen Testeinträge sind **intern** in Supabase weiterhin mit `is_test=true` markiert. Dadurch können sie später gezielt mit `cimbria_checkin_clear_test_guests` gelöscht werden, ohne echte Anmeldungen zu entfernen. Dies ist bewusst **keine sichtbare Funktion** in der Check-in-Oberfläche. Der sichtbare Gesamtwert von 82 ist keine tatsächliche Zahl realer Anmeldungen.
 
-- **Keine verfälschte Anwesenheit:** Die großen Kennzahlen **Anwesend / Offen / Fortschritt** zählen **ausschließlich echte Anmeldungen**, nicht Demo-Einträge. Der Gesamtlistenfilter enthält die Testpersonen, solange „Testpersonen anzeigen“ aktiv ist.
-
-- **Ein Klick zum Aufräumen:** „Testpersonen entfernen“ löscht nach Sicherheitsbestätigung ausschließlich `is_test=true`-Zeilen. Die Datenbank-RLS verhindert das Löschen echter Einträge. Bereits existierende Namen/Kontakte sowie deren Anwesenheit bleiben erhalten.
-
-- **Datenschutz und Rollen:** Keine Gastdaten im Repository; `anon` besitzt keine Listenrechte. Nur authentifizierte freigeschaltete Admins dürfen Gäste hinzufügen oder Testeinträge entfernen. Audit-Timestamps beim Einchecken bleiben erhalten.
+Die private Gästeliste bleibt vollständig unter Admin-Authentifizierung und Supabase-RLS geschützt. Das öffentliche GitHub-Repository enthält keine Gästekontakte und keinen Namen der 30 fiktiven Datensätze.

@@ -13,7 +13,7 @@
   const state = {
     guests: [], user: null, allowed: false, activeFilter: "all",
     search: "", expanded: new Set(), pending: new Set(),
-    showTests: true, addingGuest: false, deletingTests: false,
+    addingGuest: false,
     loading: false, busyAuth: false, toastTimer: null, reloadTimer: null,
     channel: null, pollTimer: null, started: false
   };
@@ -167,7 +167,6 @@
     const query = folded(state.search.trim());
     const digits = state.search.replace(/\D/g,"");
     return [...state.guests]
-      .filter(person => state.showTests || !person.is_test)
       .filter(person => state.activeFilter==="all"
         || (state.activeFilter==="present" && person.checked_in)
         || (state.activeFilter==="open" && !person.checked_in))
@@ -198,9 +197,7 @@
         ${pending?"disabled":""}>
         <span class="ci-status-circle" aria-hidden="true">${present?"✓":"·"}</span>
         <span class="ci-person-copy">
-          <span class="ci-person-name">${clean(person.guest_name)}
-            ${person.is_test?'<span class="ci-test-tag" title="Erfundene Testperson – keine echte Anmeldung">TEST</span>':''}
-          </span>
+          <span class="ci-person-name">${clean(person.guest_name)}</span>
           <span class="ci-person-degree">${clean(person.study_program || "Studiengang nicht angegeben")}</span>
         </span>
         <span class="ci-person-status">${pending?"Speichert…":status}</span>
@@ -221,12 +218,11 @@
 
   function render() {
     if (!state.allowed) return;
-    const realGuests=state.guests.filter(x=>!x.is_test);
-    const demoGuests=state.guests.filter(x=>x.is_test);
-    // Test people are visible by default, but never count as real attendees.
-    const total = realGuests.length;
-    const present = realGuests.filter(x=>x.checked_in).length;
-    const remaining = total-present;
+    // All guests are shown and counted identically in the check-in interface.
+    // The backend retains the private is_test marker only for safe later cleanup.
+    const total=state.guests.length;
+    const present=state.guests.filter(x=>x.checked_in).length;
+    const remaining=total-present;
     const pct=total?Math.round(100*present/total):0;
     els("ci-present-count").textContent=String(present);
     els("ci-total-count").textContent=String(total);
@@ -234,24 +230,17 @@
     els("ci-percent-count").textContent=pct+" %";
     els("ci-progress-fill").style.width=pct+"%";
     els("ci-progress-track").setAttribute("aria-valuenow",String(pct));
-    const visible=state.guests.filter(x=>state.showTests||!x.is_test);
-    els("ci-filter-total").textContent=String(visible.length);
-    els("ci-filter-present").textContent=String(visible.filter(x=>x.checked_in).length);
-    els("ci-filter-open").textContent=String(visible.filter(x=>!x.checked_in).length);
-    const note=els("ci-demo-notice");
-    note.hidden=demoGuests.length===0;
-    els("ci-demo-count").textContent=String(demoGuests.length);
-    els("ci-show-tests").checked=state.showTests;
-    els("ci-delete-tests").disabled=state.deletingTests||state.pending.size>0;
+    els("ci-filter-total").textContent=String(total);
+    els("ci-filter-present").textContent=String(present);
+    els("ci-filter-open").textContent=String(remaining);
     document.querySelectorAll("[data-filter]").forEach(btn=>{
       const active=btn.dataset.filter===state.activeFilter;
       btn.classList.toggle("active",active);
       btn.setAttribute("aria-pressed",String(active));
     });
     const rows=filteredGuests();
-    const testShown=rows.filter(x=>x.is_test).length;
     els("ci-match-count").textContent=
-      rows.length+" Personen"+(testShown?" · davon "+testShown+" TEST":"");
+      rows.length===1?"1 Person":rows.length+" Personen";
     els("ci-people").innerHTML=rows.map(personMarkup).join("");
     els("ci-empty").hidden=rows.length!==0;
   }
@@ -355,37 +344,6 @@
       submit.innerHTML='Person speichern <span aria-hidden="true">→</span>';
     }
   }
-  async function clearTestGuests() {
-    const count=state.guests.filter(x=>x.is_test).length;
-    if (!state.allowed || state.deletingTests || state.pending.size || count===0)return;
-    if(!window.confirm(
-      "Wirklich "+count+" Testpersonen vollständig aus der Gästeliste entfernen? "+
-      "Diese Aktion kann nicht rückgängig gemacht werden. "+
-      "Echte Anmeldungen und deren Check-ins bleiben erhalten."
-    ))return;
-    state.deletingTests=true;
-    els("ci-delete-tests").disabled=true;
-    try {
-      const response=await client.rpc("cimbria_checkin_clear_test_guests");
-      if(response.error)throw new Error(response.error.message);
-      if(!response.data?.success)throw new Error("Supabase hat das Entfernen nicht bestätigt.");
-      const removed=response.data.removed||0;
-      state.guests=state.guests.filter(x=>!x.is_test);
-      state.showTests=false;
-      state.expanded.clear();
-      render();
-      notice(removed+" Testpersonen entfernt. Echte Anmeldungen bleiben unverändert.");
-      queueReload();
-    }catch(error){
-      notice("Testpersonen konnten nicht entfernt werden: "+error.message,true);
-      console.warn("Check-in test cleanup:",error);
-      queueReload();
-    }finally {
-      state.deletingTests=false;
-      if(state.allowed)render();
-    }
-  }
-
   function bindEvents() {
     els("ci-login-form").addEventListener("submit",async event=>{
       event.preventDefault();
@@ -428,11 +386,6 @@
     els("ci-add-close").addEventListener("click",closeAddGuest);
     els("ci-add-cancel").addEventListener("click",closeAddGuest);
     els("ci-add-form").addEventListener("submit",event=>{void addNewGuest(event);});
-    els("ci-show-tests").addEventListener("change",event=>{
-      state.showTests=Boolean(event.target.checked);
-      render();
-    });
-    els("ci-delete-tests").addEventListener("click",()=>{void clearTestGuests();});
     els("ci-add-overlay").addEventListener("click",event=>{
       if(event.target===els("ci-add-overlay"))closeAddGuest();
     });
