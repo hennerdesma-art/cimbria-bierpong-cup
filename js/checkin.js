@@ -13,6 +13,7 @@
   const state = {
     guests: [], user: null, allowed: false, activeFilter: "all",
     search: "", expanded: new Set(), pending: new Set(),
+    showTests: true, addingGuest: false, deletingTests: false,
     loading: false, busyAuth: false, toastTimer: null, reloadTimer: null,
     channel: null, pollTimer: null, started: false
   };
@@ -60,6 +61,7 @@
     state.pending.clear();
     state.expanded.clear();
     state.user = null;
+    els("ci-add-overlay").hidden = true;
     els("ci-people").replaceChildren();
     if (state.channel) {
       client?.removeChannel?.(state.channel);
@@ -123,7 +125,7 @@
     state.loading = true;
     try {
       const response = await client.from("cimbria_guest_checkin")
-        .select("id,source_index,guest_name,contact_detail,study_program,checked_in,checked_in_at,updated_at")
+        .select("id,source_index,guest_name,contact_detail,study_program,is_test,checked_in,checked_in_at,updated_at")
         .eq("list_key",LIST_KEY).order("source_index",{ascending:true});
       if (response.error) throw new Error(response.error.message);
       if (!state.allowed) return;
@@ -144,7 +146,7 @@
     if (!state.allowed || state.channel) return;
     state.channel = client.channel("cimbria-guest-checkin-"+Date.now())
       .on("postgres_changes",{
-        event:"UPDATE",schema:"public",table:"cimbria_guest_checkin"
+        event:"*",schema:"public",table:"cimbria_guest_checkin"
       }, payload => {
         if (!payload.new?.list_key || payload.new.list_key===LIST_KEY)
           queueReload();
@@ -165,6 +167,7 @@
     const query = folded(state.search.trim());
     const digits = state.search.replace(/\D/g,"");
     return [...state.guests]
+      .filter(person => state.showTests || !person.is_test)
       .filter(person => state.activeFilter==="all"
         || (state.activeFilter==="present" && person.checked_in)
         || (state.activeFilter==="open" && !person.checked_in))
@@ -195,7 +198,9 @@
         ${pending?"disabled":""}>
         <span class="ci-status-circle" aria-hidden="true">${present?"✓":"·"}</span>
         <span class="ci-person-copy">
-          <span class="ci-person-name">${clean(person.guest_name)}</span>
+          <span class="ci-person-name">${clean(person.guest_name)}
+            ${person.is_test?'<span class="ci-test-tag" title="Erfundene Testperson – keine echte Anmeldung">TEST</span>':''}
+          </span>
           <span class="ci-person-degree">${clean(person.study_program || "Studiengang nicht angegeben")}</span>
         </span>
         <span class="ci-person-status">${pending?"Speichert…":status}</span>
@@ -216,8 +221,11 @@
 
   function render() {
     if (!state.allowed) return;
-    const total = state.guests.length;
-    const present = state.guests.filter(x=>x.checked_in).length;
+    const realGuests=state.guests.filter(x=>!x.is_test);
+    const demoGuests=state.guests.filter(x=>x.is_test);
+    // Test people are visible by default, but never count as real attendees.
+    const total = realGuests.length;
+    const present = realGuests.filter(x=>x.checked_in).length;
     const remaining = total-present;
     const pct=total?Math.round(100*present/total):0;
     els("ci-present-count").textContent=String(present);
@@ -226,20 +234,27 @@
     els("ci-percent-count").textContent=pct+" %";
     els("ci-progress-fill").style.width=pct+"%";
     els("ci-progress-track").setAttribute("aria-valuenow",String(pct));
-    els("ci-filter-total").textContent=String(total);
-    els("ci-filter-present").textContent=String(present);
-    els("ci-filter-open").textContent=String(remaining);
+    const visible=state.guests.filter(x=>state.showTests||!x.is_test);
+    els("ci-filter-total").textContent=String(visible.length);
+    els("ci-filter-present").textContent=String(visible.filter(x=>x.checked_in).length);
+    els("ci-filter-open").textContent=String(visible.filter(x=>!x.checked_in).length);
+    const note=els("ci-demo-notice");
+    note.hidden=demoGuests.length===0;
+    els("ci-demo-count").textContent=String(demoGuests.length);
+    els("ci-show-tests").checked=state.showTests;
+    els("ci-delete-tests").disabled=state.deletingTests||state.pending.size>0;
     document.querySelectorAll("[data-filter]").forEach(btn=>{
       const active=btn.dataset.filter===state.activeFilter;
       btn.classList.toggle("active",active);
       btn.setAttribute("aria-pressed",String(active));
     });
     const rows=filteredGuests();
-    els("ci-match-count").textContent=rows.length===1?"1 Person":" "+rows.length+" Personen";
+    const testShown=rows.filter(x=>x.is_test).length;
+    els("ci-match-count").textContent=
+      rows.length+" Personen"+(testShown?" · davon "+testShown+" TEST":"");
     els("ci-people").innerHTML=rows.map(personMarkup).join("");
     els("ci-empty").hidden=rows.length!==0;
   }
-
   async function toggleGuest(id) {
     if (!state.allowed || state.pending.has(id)) return;
     const person=state.guests.find(x=>x.id===id);
@@ -269,6 +284,105 @@
     } finally {
       state.pending.delete(id);
       render();
+    }
+  }
+
+  function openAddGuest() {
+    if (!state.allowed) return;
+    els("ci-add-form").reset();
+    els("ci-add-error").hidden=true;
+    els("ci-add-overlay").hidden=false;
+    els("ci-add-name").focus();
+  }
+  function closeAddGuest() {
+    if (state.addingGuest) return;
+    els("ci-add-overlay").hidden=true;
+    els("ci-add-error").hidden=true;
+    els("ci-add-open").focus();
+  }
+  async function addNewGuest(event) {
+    event.preventDefault();
+    if (!state.allowed || state.addingGuest) return;
+    const form=event.currentTarget;
+    const name=form.elements.name.value.trim();
+    const contact=form.elements.contact.value.trim();
+    const study=form.elements.study.value.trim();
+    const errorLine=els("ci-add-error");
+    errorLine.hidden=true;
+    if(name.length<2 || name.length>100){
+      errorLine.textContent="Bitte einen Namen mit 2 bis 100 Zeichen eingeben.";
+      errorLine.hidden=false;
+      return;
+    }
+    if(contact.length>200 || study.length>140){
+      errorLine.textContent="Kontakt oder Studiengang ist zu lang.";
+      errorLine.hidden=false;
+      return;
+    }
+    state.addingGuest=true;
+    const submit=els("ci-add-submit");
+    submit.disabled=true;
+    submit.textContent="Wird gespeichert …";
+    try {
+      const response=await client.rpc("cimbria_checkin_add_guest",{
+        p_name:name,
+        p_contact:contact||null,
+        p_study:study||null
+      });
+      if(response.error)throw new Error(response.error.message);
+      if(!response.data?.success || !response.data?.guest)
+        throw new Error("Die Datenbank hat die Anmeldung nicht bestätigt.");
+      const guest=response.data.guest;
+      if(!state.allowed)return;
+      // Show the newly added real guest immediately, even if the 8s poll
+      // is currently fetching. A queued refresh reconciles other devices.
+      state.guests.push(guest);
+      state.activeFilter="all";
+      state.search=name;
+      els("ci-search").value=name;
+      els("ci-add-overlay").hidden=true;
+      els("ci-add-form").reset();
+      render();
+      notice("Person hinzugefügt. Zum Einchecken einfach abhaken.");
+      queueReload();
+    }catch(error){
+      errorLine.textContent=String(error?.message||"Speichern nicht möglich.");
+      errorLine.hidden=false;
+      console.warn("Spontane Anmeldung:",error);
+    }finally{
+      state.addingGuest=false;
+      submit.disabled=false;
+      submit.innerHTML='Person speichern <span aria-hidden="true">→</span>';
+    }
+  }
+  async function clearTestGuests() {
+    const count=state.guests.filter(x=>x.is_test).length;
+    if (!state.allowed || state.deletingTests || state.pending.size || count===0)return;
+    if(!window.confirm(
+      "Wirklich "+count+" Testpersonen vollständig aus der Gästeliste entfernen? "+
+      "Diese Aktion kann nicht rückgängig gemacht werden. "+
+      "Echte Anmeldungen und deren Check-ins bleiben erhalten."
+    ))return;
+    state.deletingTests=true;
+    els("ci-delete-tests").disabled=true;
+    try {
+      const response=await client.rpc("cimbria_checkin_clear_test_guests");
+      if(response.error)throw new Error(response.error.message);
+      if(!response.data?.success)throw new Error("Supabase hat das Entfernen nicht bestätigt.");
+      const removed=response.data.removed||0;
+      state.guests=state.guests.filter(x=>!x.is_test);
+      state.showTests=false;
+      state.expanded.clear();
+      render();
+      notice(removed+" Testpersonen entfernt. Echte Anmeldungen bleiben unverändert.");
+      queueReload();
+    }catch(error){
+      notice("Testpersonen konnten nicht entfernt werden: "+error.message,true);
+      console.warn("Check-in test cleanup:",error);
+      queueReload();
+    }finally {
+      state.deletingTests=false;
+      if(state.allowed)render();
     }
   }
 
@@ -310,6 +424,18 @@
       clearPrivateData();
       showSection("ci-auth");
     });
+    els("ci-add-open").addEventListener("click",openAddGuest);
+    els("ci-add-close").addEventListener("click",closeAddGuest);
+    els("ci-add-cancel").addEventListener("click",closeAddGuest);
+    els("ci-add-form").addEventListener("submit",event=>{void addNewGuest(event);});
+    els("ci-show-tests").addEventListener("change",event=>{
+      state.showTests=Boolean(event.target.checked);
+      render();
+    });
+    els("ci-delete-tests").addEventListener("click",()=>{void clearTestGuests();});
+    els("ci-add-overlay").addEventListener("click",event=>{
+      if(event.target===els("ci-add-overlay"))closeAddGuest();
+    });
     els("ci-search").addEventListener("input",event=>{
       state.search=event.target.value;
       render();
@@ -340,6 +466,23 @@
       if(check && !check.disabled) void toggleGuest(check.dataset.checkId);
     });
     window.addEventListener("keydown",event=>{
+      if (!els("ci-add-overlay").hidden) {
+        if (event.key==="Escape") {event.preventDefault();closeAddGuest();return;}
+        if(event.key==="Tab"){
+          const items=Array.from(els("ci-add-overlay").querySelectorAll(
+            'button:not(:disabled),input:not(:disabled)'
+          )).filter(el=>el.getClientRects().length>0);
+          if(items.length){
+            const first=items[0],last=items[items.length-1];
+            if(event.shiftKey&&document.activeElement===first){
+              event.preventDefault();last.focus();
+            }else if(!event.shiftKey&&document.activeElement===last){
+              event.preventDefault();first.focus();
+            }
+          }
+        }
+        return;
+      }
       if ((event.ctrlKey||event.metaKey)&&event.key.toLowerCase()==="k" && state.allowed){
         event.preventDefault();
         els("ci-search").focus();

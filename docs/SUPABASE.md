@@ -114,3 +114,13 @@
 - Die Bedienung bietet Suche, Echtzeit-Zähler, Fortschritt, Anwesenheitsfilter, ein Rückgängig-Häkchen und aufklappbare Kontaktdaten. Realtime-Updates werden alle 8 Sekunden durch einen zusätzlichen Fallback-Poll ergänzt. Gleichzeitige Änderungen verwenden den vorherigen Status als Vergleichswert.
 - **Datenimport:** 54 Roh-Zeilen, drei eindeutige Doppeleinträge zusammengeführt, ein Eintrag mit zwei Personen in zwei Einzelpersonen aufgeteilt → 52 Datensätze. Er erfolgte direkt in Supabase, **ohne personenbezogene Seed-Daten im öffentlichen GitHub-Repository**.
 - Keine Änderung an Turniergruppen, Spielständen oder Anmeldung. Nach Veranstaltungsende Aufbewahrungs-/Löschfristen für die privaten Kontaktdaten berücksichtigen.
+
+
+## Private Check-in-Erweiterung: Spontanregistrierung und Demo (31.10.2026)
+
+- `public.cimbria_guest_checkin.is_test boolean not null default false` trennt 30 demonstrative Einträge von den ursprünglichen 52 echten Anmeldungen. `created_by` speichert bei neuen echten Anmeldungen die authentifizierte Admin-ID.
+- `public.cimbria_checkin_add_guest(p_name,p_contact,p_study)` fügt echte Anmeldungen mit Namen, optionalem Kontakt und Studiengang ein. Implementierung als `SECURITY INVOKER` unter RLS, mit Admin-/Duplikatsprüfung und transaktionssicherer Source-Index-Vergabe.
+- `public.cimbria_checkin_clear_test_guests()` entfernt ausschließlich `is_test`-Datensätze. Die DELETE-RLS verweigert das Löschen realer Anmeldungen.
+- Beide RPCs wurden mit echter authentifizierter Admin-Session in **zurückgerollten Testtransaktionen** einschließlich Duplikatprüfung, vollständigem Demo-Cleanup und Erhalt echter Besucher getestet. Ein beliebiger nicht autorisierter Benutzer erhält einen Fehler; anonyme Benutzer haben kein EXECUTE.
+- **Import:** 30 erfundene Namen mit fiktivem Studiengang, ohne private Kontaktdaten, direkt in die geschützte Supabase-Tabelle geladen. Keine Seed-Datensätze oder Testnamen in GitHub enthalten.
+- UI unter `checkin.html`: Bereich „TEST“ mit Zähler, Sichtbarkeitsschalter und explizitem Lösch-Button; große Anwesenheits-KPIs zählen ausschließlich reale Gäste. Spontan-Formular mit optionalen Kontakt- und Studiengangfeldern, validierten Angaben, gespeicherten Supabase-Daten und Live-Abgleich.

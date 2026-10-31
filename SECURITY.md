@@ -49,3 +49,12 @@
 - Die UI verwendet `textContent` bzw. HTML-Escaping, `aria-pressed` für Häkchen und eine Vergleichsbedingung auf den bisherigen Anwesenheitszustand, um konkurrierende Check-ins nicht stillschweigend zu überschreiben.
 - `noindex` ist lediglich zusätzlicher Schutz gegen Indexierung, **keine Authentifizierung**. Den eigentlichen Zugriff regeln Supabase-RLS und authentifizierte Admin-Sitzungen.
 - Die Datenbankänderung und der nichtöffentliche Import sind voneinander getrennt. Nach Ablauf der erforderlichen Aufbewahrungsfrist sollte die Gästeliste sicher aus Supabase entfernt werden.
+
+
+## Check-in V2: Testprofile und echte spontane Gäste
+
+- Fiktive Personen sind in der Tabelle `is_test=true` markiert. Echte Personen haben `is_test=false` und werden separat gezählt. Der Browser darf `is_test` **nicht** verändern.
+- Nur verifizierte aktive Administratoren dürfen neue Personen über `cimbria_checkin_add_guest` erfassen. Die RPC läuft `SECURITY INVOKER` mit RLS, Pflichtfeldprüfung, Begrenzung der Textlängen, Duplikatsprüfung und per `pg_advisory_xact_lock` abgesicherter Listennummer.
+- Der Client erhält `INSERT`-Rechte lediglich auf `source_index,guest_name,contact_detail,study_program`; die INSERT-RLS verlangt `is_test=false`, gültige Listenzuordnung, `created_by=auth.uid()` und die serverseitige Admin-Allowlist.
+- Der Lösch-Button ruft `cimbria_checkin_clear_test_guests` auf. Obwohl `authenticated` tabellenweite DELETE-Berechtigung zur Ausführung benötigt, erlaubt die DELETE-RLS ausdrücklich **nur** `is_test=true` und den echten Admin. Anonyme Nutzer können weder die Daten sehen noch diese RPC aufrufen.
+- Testpersonen sind synthetisch, besitzen keine echten Telefonnummern/Instagram-Handles und dürfen nicht als echte registrierte Besucher kommuniziert werden. Ihre Namen sind **nicht** in der öffentlichen SQL-Migration enthalten.

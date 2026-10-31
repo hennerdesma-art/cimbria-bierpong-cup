@@ -11,7 +11,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/checkin.css?v=checkin-1-20261031">
+  <link rel="stylesheet" href="css/checkin.css?v=checkin-2-20261031">
 </head>
 <body>
   <div class="ci-background" aria-hidden="true">
@@ -75,12 +75,12 @@
         <article class="ci-summary-card ci-summary-main">
           <span class="ci-summary-label">ANWESEND</span>
           <div><strong id="ci-present-count">0</strong><span class="ci-summary-suffix">/ <span id="ci-total-count">0</span></span></div>
-          <span class="ci-summary-description">Personen angekommen</span>
+          <span class="ci-summary-description">Echte Anmeldungen · ohne Testpersonen</span>
         </article>
         <article class="ci-summary-card">
           <span class="ci-summary-label">NOCH OFFEN</span>
           <strong id="ci-open-count">0</strong>
-          <span class="ci-summary-description">Personen ausstehend</span>
+          <span class="ci-summary-description">Echte Personen noch offen</span>
         </article>
         <article class="ci-summary-card">
           <span class="ci-summary-label">FORTSCHRITT</span>
@@ -89,10 +89,28 @@
         </article>
       </div>
 
+      <div class="ci-demo-notice" id="ci-demo-notice" hidden>
+        <div class="ci-demo-description">
+          <span class="ci-demo-symbol">TEST</span>
+          <div><strong><span id="ci-demo-count">0</span> Demo-Personen für Testzwecke</strong>
+            <p>Diese Einträge sind erfunden und zählen <b>nicht</b> zur echten Anwesenheit.</p></div>
+        </div>
+        <div class="ci-demo-controls">
+          <label class="ci-demo-switch"><input type="checkbox" id="ci-show-tests" checked>
+            <span>Testpersonen anzeigen</span></label>
+          <button type="button" class="ci-danger-quiet" id="ci-delete-tests">
+            Testpersonen entfernen
+          </button>
+        </div>
+      </div>
+
       <div class="ci-list-panel">
         <div class="ci-panel-header">
           <div><div class="ci-eyebrow">LIVE · ANMELDELISTE</div><h2>Wer ist schon da?</h2></div>
-          <div class="ci-panel-auth"><span id="ci-current-user"></span><button type="button" id="ci-logout" class="ci-logout">Abmelden</button></div>
+          <div class="ci-panel-tools">
+            <button type="button" class="ci-add-button" id="ci-add-open"><span aria-hidden="true">+</span> Person hinzufügen</button>
+            <div class="ci-panel-auth"><span id="ci-current-user"></span><button type="button" id="ci-logout" class="ci-logout">Abmelden</button></div>
+          </div>
         </div>
         <div class="ci-toolbar">
           <div class="ci-search-wrap">
@@ -121,8 +139,36 @@
       <p class="ci-footer-note">Vertrauliche Liste · Namen und Kontakte nur für berechtigte Admins · Änderungen werden automatisch gespeichert und protokolliert.</p>
     </section>
   </main>
+  <div id="ci-add-overlay" class="ci-add-overlay" hidden>
+    <section class="ci-add-dialog" role="dialog" aria-modal="true" aria-labelledby="ci-add-title" aria-describedby="ci-add-description">
+      <div class="ci-add-top">
+        <div class="ci-add-icon" aria-hidden="true">+</div>
+        <button type="button" class="ci-add-close" id="ci-add-close" aria-label="Fenster schließen">×</button>
+      </div>
+      <div class="ci-eyebrow">SPONTANE ANMELDUNG · NUR ADMIN</div>
+      <h2 id="ci-add-title">Person hinzufügen</h2>
+      <p id="ci-add-description">Neue Gäste werden sofort der echten Anmeldeliste hinzugefügt. Sie sind zunächst noch nicht eingecheckt.</p>
+      <form id="ci-add-form" novalidate>
+        <label for="ci-add-name">Name <span aria-label="Pflichtfeld">*</span></label>
+        <input id="ci-add-name" name="name" type="text" required minlength="2" maxlength="100"
+          autocomplete="name" placeholder="Vor- und Nachname" autocapitalize="words">
+        <label for="ci-add-contact">Telefon oder Instagram <span class="ci-optional">(optional)</span></label>
+        <input id="ci-add-contact" name="contact" type="text" maxlength="200"
+          autocomplete="off" placeholder="@instagram oder Telefonnummer">
+        <label for="ci-add-study">Studiengang <span class="ci-optional">(optional)</span></label>
+        <input id="ci-add-study" name="study" type="text" maxlength="140"
+          autocomplete="off" placeholder="z. B. Wirtschaftsingenieurwesen">
+        <p id="ci-add-error" class="ci-add-error" role="alert" hidden></p>
+        <div class="ci-add-actions">
+          <button type="button" id="ci-add-cancel" class="ci-secondary">Abbrechen</button>
+          <button type="submit" id="ci-add-submit" class="ci-primary">Person speichern <span aria-hidden="true">→</span></button>
+        </div>
+      </form>
+      <p class="ci-add-note">Mit dem Speichern bestätigst du die Berechtigung, diese personenbezogenen Daten für den Einlass zu erfassen.</p>
+    </section>
+  </div>
   <div id="ci-toast" class="ci-toast" hidden role="status" aria-live="polite"></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js" defer></script>
-  <script src="js/checkin.js?v=checkin-1-20261031" defer></script>
+  <script src="js/checkin.js?v=checkin-2-20261031" defer></script>
 </body>
 </html>

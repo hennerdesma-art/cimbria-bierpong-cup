@@ -106,3 +106,18 @@ Die Türliste lässt sich auf Smartphone, iPad oder PC abhaken. Funktionen: Name
 **Privatsphäre:** Die Seite ist kein öffentlicher Gastzugang. Sie verlangt die bestehenden **aktiven und bestätigten Cimbria-Admin-Zugänge**; die Datenbank-RLS prüft die serverseitige Admin-Freigabe. Anonyme Besucher können weder Namen/Kontakte lesen noch Anwesenheitsstände schreiben. Das öffentliche Repository enthält **keine Namen, Telefonnummern, Instagram-Konten oder Studiengänge aus der Gästeliste**. Die 54 Quellzeilen wurden ausschließlich über eine geschützte Supabase-Verbindung importiert und ergeben nach drei offensichtlichen Doppel-Einträgen und Aufteilung einer Zwei-Personen-Zeile **52 abhakebare Personen**. Die Daten werden bewusst nicht als Seed in einer öffentlichen Migration gespeichert.
 
 Die Teamanmeldung und das laufende Bierpong-Turnier werden durch diese Unterseite nicht verändert. Lösche die persönlichen Gästedaten in Supabase, wenn die Aufbewahrung für den konkreten Veranstaltungszweck nicht mehr nötig ist.
+
+
+## Gäste-Check-in V2: Spontanregistrierung und 30 Testgäste
+
+Die geschützte `checkin.html`-Seite unterstützt ab sofort:
+
+- **Person hinzufügen:** Admin-Button über der Gästeliste. Name ist Pflichtfeld (2–100 Zeichen), Telefon/Instagram und Studiengang sind optional. Die `SECURITY INVOKER`-RPC `cimbria_checkin_add_guest` vergibt die nächste freie Listennummer, prüft Auth/RLS, Eingaben und doppelte Personen. Die neue Person ist eine **echte Anmeldung**, zunächst noch nicht eingecheckt, und wird sofort angezeigt und zwischen Geräten synchronisiert.
+
+- **30 Demo-Einträge:** Für den visuellen Test wurden 30 eindeutig fiktive Personen **direkt in die geschützte Datenbank importiert**, nicht in den öffentlichen GitHub-Code. Jede Karte trägt ein sichtbares **TEST**-Abzeichen, plus einen Erklärungshinweis über der Liste. Standardmäßig sind sie sichtbar und können zum Testen der Checkboxen verwendet werden.
+
+- **Keine verfälschte Anwesenheit:** Die großen Kennzahlen **Anwesend / Offen / Fortschritt** zählen **ausschließlich echte Anmeldungen**, nicht Demo-Einträge. Der Gesamtlistenfilter enthält die Testpersonen, solange „Testpersonen anzeigen“ aktiv ist.
+
+- **Ein Klick zum Aufräumen:** „Testpersonen entfernen“ löscht nach Sicherheitsbestätigung ausschließlich `is_test=true`-Zeilen. Die Datenbank-RLS verhindert das Löschen echter Einträge. Bereits existierende Namen/Kontakte sowie deren Anwesenheit bleiben erhalten.
+
+- **Datenschutz und Rollen:** Keine Gastdaten im Repository; `anon` besitzt keine Listenrechte. Nur authentifizierte freigeschaltete Admins dürfen Gäste hinzufügen oder Testeinträge entfernen. Audit-Timestamps beim Einchecken bleiben erhalten.
